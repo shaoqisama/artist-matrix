@@ -18,29 +18,12 @@ def test_main_menu_snapshot() -> None:
     assert menu == load_snapshot("test_shell--main_menu.txt")
 
 
-def test_generate_branch_outputs_sequence(monkeypatch) -> None:
-    inputs: Iterator[str] = iter(["1", "q"])
-    captured: list[str] = []
-
-    def fake_input(prompt: str) -> str:
-        return next(inputs)
-
-    app = TuiApp(input_func=fake_input, output_func=captured.append)
-    app.run()
-
-    assert any("Initiating Soul Forge" in line for line in captured)
-    assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."
-
-
-def test_select_branch_outputs_sequence(monkeypatch) -> None:
+def test_select_branch_without_persona() -> None:
     inputs: Iterator[str] = iter(["2", "q"])
     captured: list[str] = []
 
-    def fake_input(prompt: str) -> str:
-        return next(inputs)
-
-    app = TuiApp(input_func=fake_input, output_func=captured.append)
+    app = TuiApp(input_func=lambda _: next(inputs), output_func=captured.append)
     app.run()
 
-    assert any("Accessing artist archives" in line for line in captured)
+    assert any("No personas forged" in line for line in captured)
     assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."

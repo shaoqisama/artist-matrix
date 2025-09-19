@@ -66,7 +66,14 @@
 - [x] Persist draft state in `SessionState` to resume cancelled sessions without re-entry.
 - [x] Expand TUI regression tests to cover alternate flows, validation errors, and cancellation recovery.
 
-## Milestone 11: Post-Forge Hand-off Automation
+## Milestone 11: DeepSeek Persona LLM Integration
+- [ ] Build prompt template registry under `prompts/persona/` with Pydantic models capturing variables (genre, mood, narrative tone, safety notes).
+- [ ] Implement `DeepSeekPersonaConnector` that renders templates, signs requests with `ARTIST_MATRIX_PERSONA_API_KEY`, and parses JSON responses via Pydantic.
+- [ ] Add retry/backoff + safety filtering (content moderation) before persisting manifests.
+- [ ] Extend unit/integration tests using mocked DeepSeek responses and golden prompt snapshots.
+- [ ] Document connector setup, required prompt files, and operational runbook updates in `docs/agents/soul_forge.md` and `docs/workflows.md`.
+
+## Milestone 12: Post-Forge Hand-off Automation
 - [ ] Offer immediate options to launch Creation Engine briefs or Echo Chamber campaigns using the freshly forged manifest.
 - [ ] Pre-populate track and campaign specs from wizard inputs to reduce duplicate typing.
 - [ ] Record workflow breadcrumbs in session state for reuse by downstream commands and future CLI automation.

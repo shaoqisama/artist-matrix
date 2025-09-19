@@ -32,6 +32,6 @@ Consult `docs/project_plan.md` before starting any task; each milestone below mi
 - Build integration tests in `tests/integration/` using fixture manifests to exercise cross-node hand-offs and error recovery.
 
 ## Milestone 7 – Documentation & Delivery
-- Expand `docs/agents/` and update sequence diagrams whenever an agent contract shifts.
-- Keep commit summaries short and imperative (`"add tui navigation"`), reference issues, and include `make verify` output or TUI screenshots in PRs.
-- Record operational playbook updates directly in `docs/project_plan.md` so future tasks inherit the refined guidance.
+- Expand and maintain `docs/agents/` when behavior changes; mirror updates in `docs/workflows.md` and sequence diagrams.
+- Keep commit summaries short and imperative (`"add tui navigation"`), reference issues, and attach `uv run make verify` output or TUI screenshots in PRs.
+- Refresh `README.md` and `docs/project_plan.md` after major milestones so onboarding stays accurate.

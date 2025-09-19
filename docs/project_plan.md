@@ -12,6 +12,7 @@
 - Add ASCII art headers, color palette constants, and retro status indicators under `assets/tui/`.
 - Write snapshot-based TUI regression tests in `tests/tui/test_shell.py` using textual's testing harness or `pytest` golden files.
 
+
 ## Milestone 2: Soul Forge Agent
 - Design `artist_matrix/soul_forge/` module with persona schema (`ArtistProfile`) and creation workflow orchestrator.
 - Integrate LLM routing stubs (using dependency injection for DeepSeek/Claude connectors) and SDXL prompt generation placeholders.
@@ -44,3 +45,11 @@
 - Add `docs/agents/` subfolder housing per-agent configuration guides and prompt samples.
 - Keep `AGENTS.md` synchronized with this plan, listing expectations and checklists aligned to each milestone.
 - Prepare onboarding README updates summarizing setup, verified commands, and release cadence.
+
+## Milestone 8: Generate Avatar Flow Refinement
+- **User Flow Audit**: Map each prompt/confirmation required to gather persona traits (name, genre, mood, influences) referencing `docs/project_outline.md`.
+- **Input Capture Implementation**: Extend `TuiApp` with a multi-step wizard, validating inputs, saving drafts, and presenting a summary before submission.
+- **Soul Forge Integration**: Invoke `SoulForgeService.generate` with captured data, surface progress states, and render success/error feedback inline.
+- **Avatar Preview Rendering**: Persist avatar blueprint data, display prompt/seed summaries or ASCII placeholders, and prep for future image embedding.
+- **Persistence & Navigation**: Store manifest paths in session state to enable immediate hand-off to creation flows; support cancellation/back navigation gracefully.
+- **Testing & Telemetry**: Author flow tests in `tests/tui/test_generate_flow.py` mocking Soul Forge responses and track instrumentation hooks for debugging.

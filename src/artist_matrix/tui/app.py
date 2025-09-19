@@ -26,10 +26,24 @@ def _to_sequence(raw: str) -> tuple[str, ...]:
     items = [segment.strip() for segment in raw.split(",") if segment.strip()]
     return tuple(items)
 @dataclass
+class PersonaWizardDraft:
+    name: str = ""
+    genre: str = ""
+    mood: str = ""
+    influences: tuple[str, ...] = ()
+    descriptors: tuple[str, ...] = ()
+    brief: str = ""
+    visual_palette: tuple[str, ...] = ()
+    narrative_tone: str = ""
+    safety_notes: str = ""
+
+
+@dataclass
 class SessionState:
     last_profile: ArtistProfile | None = None
     last_manifest_path: Path | None = None
     last_avatar: AvatarBlueprint | None = None
+    draft: PersonaWizardDraft = field(default_factory=PersonaWizardDraft)
 
 
 @dataclass
@@ -117,48 +131,25 @@ class TuiApp:
 
     def handle_generate(self) -> None:
         self.output("\n>> Soul Forge // Persona constructor engaged")
-        name = self._prompt_required("Artist alias")
-        genre = self._prompt_required("Primary genre")
-        mood = self._prompt_required("Mood or energy signature")
-        influences_raw = self._prompt_optional(
-            "Influences (comma-separated, leave blank if none)"
-        )
-        descriptors_raw = self._prompt_optional(
-            "Descriptors or persona tags (comma-separated)"
-        )
-        brief = self._prompt_optional(
-            "One-line creative brief (optional)", allow_empty=True
-        )
-
-        influences = _to_sequence(influences_raw)
-        descriptors = _to_sequence(descriptors_raw)
-
-        summary_lines = [
-            "",
-            ":: Persona Draft Summary ::",
-            f" Name       : {name}",
-            f" Genre      : {genre}",
-            f" Mood       : {mood}",
-            f" Influences : {', '.join(influences) if influences else '—'}",
-            f" Descriptors: {', '.join(descriptors) if descriptors else '—'}",
-            f" Brief      : {brief or '—'}",
-        ]
-        self.output("\n".join(summary_lines))
-
-        if not self._prompt_confirm("Forge this persona? (y/n)"):
+        draft = self._collect_persona_draft()
+        if draft is None:
             self.output("\n>> Persona creation cancelled. Returning to main menu.")
             return
 
+        self.session.draft = draft
         self.output("\n>> Forging persona... stand by")
         try:
             result = self.soul_forge.generate(
                 SoulForgeRequest(
-                    name=name,
-                    genre=genre,
-                    mood=mood,
-                    influences=influences or ("experimental muse",),
-                    descriptors=descriptors,
-                    brief=brief or None,
+                    name=draft.name,
+                    genre=draft.genre,
+                    mood=draft.mood,
+                    influences=draft.influences or ("experimental muse",),
+                    descriptors=draft.descriptors,
+                    brief=draft.brief or None,
+                    visual_palette=draft.visual_palette,
+                    narrative_tone=draft.narrative_tone or None,
+                    safety_notes=draft.safety_notes or None,
                 )
             )
         except Exception as exc:  # noqa: BLE001
@@ -199,6 +190,14 @@ class TuiApp:
                     f"   asset: {avatar.asset_path or 'n/a'}",
                 ]
             )
+        if draft.visual_palette:
+            summary.append(
+                f" → Visual palette: {', '.join(draft.visual_palette)}"
+            )
+        if draft.narrative_tone:
+            summary.append(f" → Narrative tone: {draft.narrative_tone}")
+        if draft.safety_notes:
+            summary.append(f" → Safety notes : {draft.safety_notes}")
         self.output("\n".join(summary))
 
     def handle_select(self) -> None:
@@ -218,6 +217,181 @@ class TuiApp:
 
     def output(self, message: str) -> None:
         self._output(message)
+
+    # --- Wizard helpers -------------------------------------------------
+
+    def _collect_persona_draft(self) -> PersonaWizardDraft | None:
+        draft = PersonaWizardDraft(
+            name=self.session.draft.name,
+            genre=self.session.draft.genre,
+            mood=self.session.draft.mood,
+            influences=self.session.draft.influences,
+            descriptors=self.session.draft.descriptors,
+            brief=self.session.draft.brief,
+            visual_palette=self.session.draft.visual_palette,
+            narrative_tone=self.session.draft.narrative_tone,
+            safety_notes=self.session.draft.safety_notes,
+        )
+
+        steps = [
+            ("name", "Artist alias", True, "text"),
+            ("genre", "Primary genre", True, "text"),
+            ("mood", "Mood or energy signature", True, "text"),
+            (
+                "influences",
+                "Influences (comma-separated, leave blank if none)",
+                False,
+                "sequence",
+            ),
+            (
+                "descriptors",
+                "Descriptors or persona tags (comma-separated)",
+                False,
+                "sequence",
+            ),
+            (
+                "brief",
+                "One-line creative brief (optional)",
+                False,
+                "text",
+            ),
+            (
+                "visual_palette",
+                "Visual palette cues (comma-separated)",
+                False,
+                "sequence",
+            ),
+            (
+                "narrative_tone",
+                "Narrative tone (optional)",
+                False,
+                "text",
+            ),
+            (
+                "safety_notes",
+                "Safety guardrails (optional)",
+                False,
+                "text",
+            ),
+        ]
+
+        self.output("Enter '<' to go back, '.' to keep the current value.")
+        index = 0
+        while index < len(steps):
+            key, prompt, required, kind = steps[index]
+            current_value = getattr(draft, key)
+            display_value = (
+                ", ".join(current_value)
+                if isinstance(current_value, tuple)
+                else current_value or "—"
+            )
+            raw = self._input(f"{prompt} [{display_value}]: ").strip()
+            if raw in {"<", "b", "back"}:
+                if index == 0:
+                    self.output("  Already at the first step.")
+                    continue
+                index -= 1
+                continue
+            if raw == ".":
+                index += 1
+                continue
+            if not raw:
+                if required and not current_value:
+                    self.output("  Please provide a value.")
+                    continue
+                if kind == "sequence":
+                    setattr(draft, key, tuple() if not raw else _to_sequence(raw))
+                else:
+                    setattr(draft, key, current_value if current_value else "")
+                index += 1
+                continue
+
+            try:
+                if kind == "sequence":
+                    parsed = _to_sequence(raw)
+                    setattr(draft, key, parsed)
+                else:
+                    setattr(draft, key, raw)
+            except ValueError as exc:  # pragma: no cover - defensive
+                self.output(f"  Invalid input: {exc}")
+                continue
+            index += 1
+
+        # Summary + confirmation loop
+        while True:
+            self.output("\n".join(self._summary_lines(draft)))
+            action = self._input("Action [f]orge / [e]dit / [c]ancel: ").strip().lower()
+            if action in {"f", "forge"}:
+                return draft
+            if action in {"c", "cancel"}:
+                self.session.draft = draft
+                return None
+            if action in {"e", "edit"}:
+                target = self._input(" Step number to edit (blank for first): ").strip()
+                if target.isdigit():
+                    idx = int(target) - 1
+                    if 0 <= idx < len(steps):
+                        index = idx
+                    else:
+                        self.output("  Invalid step number.")
+                        continue
+                else:
+                    index = 0
+                while index < len(steps):
+                    key, prompt, required, kind = steps[index]
+                    current_value = getattr(draft, key)
+                    display_value = (
+                        ", ".join(current_value)
+                        if isinstance(current_value, tuple)
+                        else current_value or "—"
+                    )
+                    raw = self._input(f"{prompt} [{display_value}]: ").strip()
+                    if raw in {"<", "b", "back"}:
+                        if index == 0:
+                            self.output("  Already at the first step.")
+                            continue
+                        index -= 1
+                        continue
+                    if raw == ".":
+                        index += 1
+                        continue
+                    if not raw:
+                        if required and not current_value:
+                            self.output("  Please provide a value.")
+                            continue
+                        if kind == "sequence":
+                            setattr(draft, key, current_value if isinstance(current_value, tuple) else tuple())
+                        else:
+                            setattr(draft, key, current_value if current_value else "")
+                        index += 1
+                        continue
+                    if kind == "sequence":
+                        setattr(draft, key, _to_sequence(raw))
+                    else:
+                        setattr(draft, key, raw)
+                    index += 1
+                continue
+            self.output("  Enter 'f', 'e', or 'c'.")
+
+    def _summary_lines(self, draft: PersonaWizardDraft) -> list[str]:
+        def fmt(value: object) -> str:
+            if isinstance(value, tuple):
+                return ", ".join(value) if value else "—"
+            return value if isinstance(value, str) and value else "—"
+
+        return [
+            "",
+            ":: Persona Draft Summary ::",
+            f" 1. Name            : {fmt(draft.name)}",
+            f" 2. Genre           : {fmt(draft.genre)}",
+            f" 3. Mood            : {fmt(draft.mood)}",
+            f" 4. Influences      : {fmt(draft.influences)}",
+            f" 5. Descriptors     : {fmt(draft.descriptors)}",
+            f" 6. Brief           : {fmt(draft.brief)}",
+            f" 7. Visual palette  : {fmt(draft.visual_palette)}",
+            f" 8. Narrative tone  : {fmt(draft.narrative_tone)}",
+            f" 9. Safety notes    : {fmt(draft.safety_notes)}",
+        ]
 
     def _prompt_required(self, prompt: str) -> str:
         while True:

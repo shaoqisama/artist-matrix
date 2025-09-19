@@ -31,6 +31,9 @@ class SoulForgeRequest:
     influences: Iterable[str]
     descriptors: Iterable[str] = ()
     brief: str | None = None
+    visual_palette: Iterable[str] = ()
+    narrative_tone: str | None = None
+    safety_notes: str | None = None
 
     def to_persona_request(self) -> PersonaRequest:
         return PersonaRequest(
@@ -40,6 +43,9 @@ class SoulForgeRequest:
             influences=tuple(self.influences),
             descriptors=tuple(self.descriptors),
             brief=self.brief,
+            visual_palette=tuple(self.visual_palette),
+            narrative_tone=self.narrative_tone,
+            safety_notes=self.safety_notes,
         )
 
 

@@ -51,7 +51,10 @@ def test_generate_avatar_flow_success(tmp_path: Path, stub_service: StubSoulForg
             "Kavinsky",  # influences
             "retro, cinematic",  # descriptors
             "A neon vigilante",  # brief
-            "y",  # confirm forge
+            "neon magenta, chrome",  # visual palette
+            "epic monologue",  # narrative tone
+            "avoid explicit content",  # safety notes
+            "f",  # summary action -> forge
             "q",  # exit application
         ]
     )
@@ -68,7 +71,54 @@ def test_generate_avatar_flow_success(tmp_path: Path, stub_service: StubSoulForg
     app.run()
 
     assert stub_service.requests
+    request = stub_service.requests[0]
+    assert request.visual_palette == ("neon magenta", "chrome")
+    assert request.narrative_tone == "epic monologue"
+    assert request.safety_notes == "avoid explicit content"
     assert session.last_profile is not None
     assert session.last_manifest_path is not None
     assert any("Persona forged successfully" in line for line in captured)
+    assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."
+
+
+def test_generate_avatar_flow_edit_back(tmp_path: Path, stub_service: StubSoulForgeService) -> None:
+    inputs: Iterator[str] = iter(
+        [
+            "1",
+            "Neon Wasteland",
+            "synthwave",
+            "fierce",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "e",
+            "4",
+            "Kavinsky, Gunship",
+            ".",
+            ".",
+            ".",
+            ".",
+            ".",
+            "f",
+            "q",
+        ]
+    )
+    captured: list[str] = []
+
+    session = SessionState()
+    app = TuiApp(
+        input_func=lambda _: next(inputs),
+        output_func=captured.append,
+        soul_forge_service=stub_service,
+        session=session,
+    )
+
+    app.run()
+
+    assert stub_service.requests
+    request = stub_service.requests[-1]
+    assert request.influences == ("Kavinsky", "Gunship")
     assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."

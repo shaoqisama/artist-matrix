@@ -61,10 +61,10 @@
 - [x] Update integration tests to mock external services while verifying prompt payloads and manifest enrichment.
 
 ## Milestone 10: Wizard UX Enhancements
-- [ ] Add step navigation (back/edit) and confirmation screens so users can revise inputs before forging.
-- [ ] Capture additional persona attributes (visual palettes, narrative tone, safety guidelines) aligned with `docs/project_outline.md`.
-- [ ] Persist draft state in `SessionState` to resume cancelled sessions without re-entry.
-- [ ] Expand TUI regression tests to cover alternate flows, validation errors, and cancellation recovery.
+- [x] Add step navigation (back/edit) and confirmation screens so users can revise inputs before forging.
+- [x] Capture additional persona attributes (visual palettes, narrative tone, safety guidelines) aligned with `docs/project_outline.md`.
+- [x] Persist draft state in `SessionState` to resume cancelled sessions without re-entry.
+- [x] Expand TUI regression tests to cover alternate flows, validation errors, and cancellation recovery.
 
 ## Milestone 11: Post-Forge Hand-off Automation
 - [ ] Offer immediate options to launch Creation Engine briefs or Echo Chamber campaigns using the freshly forged manifest.

@@ -9,6 +9,7 @@ Populate each section as milestones introduce concrete implementations.
 - Persist validated `ArtistProfile` manifests under `data/artists/<slug>.json`.
 - Trigger avatar generator stub to capture prompts and seeds for later rendering.
 - Configure generators via `ARTIST_MATRIX_PERSONA_PROVIDER` and `ARTIST_MATRIX_AVATAR_PROVIDER` when wiring external services.
+- TUI wizard captures extended attributes (visual palette, narrative tone, safety notes) with back/edit navigation before forging.
 
 ## Creation Engine Track Production
 - Translate profile + `TrackJobSpec` into lyric draft via lyric generator stub.

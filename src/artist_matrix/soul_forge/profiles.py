@@ -27,6 +27,8 @@ class ArtistProfile(BaseModel):
     visual_style: str
     influences: Sequence[str] = Field(default_factory=tuple)
     safety_notes: str | None = None
+    visual_palette: Sequence[str] = Field(default_factory=tuple)
+    narrative_tone: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     version: str = "1.0"
 
@@ -47,6 +49,7 @@ class ArtistProfile(BaseModel):
         payload["created_at"] = self.created_at.isoformat()
         payload["persona_tags"] = list(self.persona_tags)
         payload["influences"] = list(self.influences)
+        payload["visual_palette"] = list(self.visual_palette)
         return payload
 
     @classmethod
@@ -69,6 +72,8 @@ class ArtistProfile(BaseModel):
             visual_style=draft.visual_style,
             influences=tuple(draft.influences),
             safety_notes=draft.safety_notes,
+            visual_palette=tuple(getattr(draft, "visual_palette", ())),
+            narrative_tone=getattr(draft, "narrative_tone", None),
             created_at=created_at or datetime.utcnow(),
             version=version,
         )

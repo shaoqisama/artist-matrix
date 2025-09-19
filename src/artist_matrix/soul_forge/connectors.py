@@ -36,6 +36,8 @@ class StubPersonaGenerator(PersonaGenerator):
             visual_style=visual_style,
             influences=influences or ("synthetic muse",),
             safety_notes=safety_notes,
+            visual_palette=tuple(request.visual_palette),
+            narrative_tone=request.narrative_tone,
         )
 
 
@@ -55,6 +57,8 @@ class LLMTemplatePersonaGenerator(PersonaGenerator):
         safety_notes = (
             "Generated via {provider} model {model}; review for content safety."
         ).format(provider=self.provider, model=self.model)
+        visual_palette = tuple(request.visual_palette) or (f"{request.genre} neon",)
+        narrative_tone = request.narrative_tone or f"{request.mood} chronicle"
         return PersonaDraft(
             name=request.name,
             persona_tags=persona_tags,
@@ -62,6 +66,8 @@ class LLMTemplatePersonaGenerator(PersonaGenerator):
             visual_style=visual_style,
             influences=influences,
             safety_notes=safety_notes,
+            visual_palette=visual_palette,
+            narrative_tone=narrative_tone,
         )
 
 

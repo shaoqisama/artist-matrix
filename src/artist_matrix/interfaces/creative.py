@@ -22,6 +22,9 @@ class PersonaRequest:
     influences: Sequence[str]
     descriptors: Sequence[str] = ()
     brief: str | None = None
+    visual_palette: Sequence[str] = ()
+    narrative_tone: str | None = None
+    safety_notes: str | None = None
 
 
 @dataclass(frozen=True)
@@ -34,6 +37,8 @@ class PersonaDraft:
     visual_style: str
     influences: Sequence[str]
     safety_notes: str | None = None
+    visual_palette: Sequence[str] = ()
+    narrative_tone: str | None = None
 
 
 @dataclass(frozen=True)

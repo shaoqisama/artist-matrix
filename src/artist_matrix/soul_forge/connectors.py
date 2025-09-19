@@ -47,6 +47,7 @@ class LLMTemplatePersonaGenerator(PersonaGenerator):
 
     provider: str
     model: str
+    api_key: str | None = None
 
     def draft_persona(self, request: PersonaRequest) -> PersonaDraft:
         influences = tuple(request.influences) or ("experimental muse",)
@@ -57,6 +58,8 @@ class LLMTemplatePersonaGenerator(PersonaGenerator):
         safety_notes = (
             "Generated via {provider} model {model}; review for content safety."
         ).format(provider=self.provider, model=self.model)
+        if self.api_key:
+            safety_notes += " (api key supplied)"
         visual_palette = tuple(request.visual_palette) or (f"{request.genre} neon",)
         narrative_tone = request.narrative_tone or f"{request.mood} chronicle"
         return PersonaDraft(
@@ -103,6 +106,7 @@ class DiffusionAvatarGenerator(AvatarGenerator):
     model: str
     asset_root: Path
     prompt_template: Callable[[ArtistProfile], str] | None = None
+    api_key: str | None = None
 
     def __post_init__(self) -> None:
         self.asset_root.mkdir(parents=True, exist_ok=True)
@@ -113,12 +117,14 @@ class DiffusionAvatarGenerator(AvatarGenerator):
             if self.prompt_template
             else f"{profile.visual_style} portrait of {profile.name}"
         )
-        metadata = {
+        metadata: dict[str, object] = {
             "provider": self.provider,
             "model": self.model,
             "prompt": prompt,
             "persona_tags": list(profile.persona_tags),
         }
+        if self.api_key:
+            metadata["api_key_present"] = True
         asset_path = self.asset_root / f"{profile.slug}-{self.provider}.json"
         asset_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
         return AvatarBlueprint(prompt=prompt, seed=108, asset_path=asset_path)
@@ -130,7 +136,11 @@ def build_persona_generator(settings: ArtistMatrixSettings) -> PersonaGenerator:
         return StubPersonaGenerator()
     if provider in {"deepseek", "claude"}:
         model = settings.persona_model or "persona-default"
-        return LLMTemplatePersonaGenerator(provider=provider, model=model)
+        return LLMTemplatePersonaGenerator(
+            provider=provider,
+            model=model,
+            api_key=settings.persona_api_key,
+        )
     raise NotImplementedError(
         f"Persona provider '{settings.persona_provider}' is not implemented."
     )
@@ -147,6 +157,7 @@ def build_avatar_generator(settings: ArtistMatrixSettings) -> AvatarGenerator:
             provider=provider,
             model=model,
             asset_root=asset_root,
+            api_key=settings.avatar_api_key,
         )
     raise NotImplementedError(
         f"Avatar provider '{settings.avatar_provider}' is not implemented."

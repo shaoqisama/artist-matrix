@@ -81,11 +81,16 @@ def test_full_workflow(tmp_path: Path) -> None:
     avatars_dir = tmp_path / "avatars"
 
     soul_service = SoulForgeService(
-        persona_generator=LLMTemplatePersonaGenerator(provider="deepseek", model="deepseek-music"),
+        persona_generator=LLMTemplatePersonaGenerator(
+            provider="deepseek",
+            model="deepseek-music",
+            api_key="sk-deepseek-test",
+        ),
         avatar_generator=DiffusionAvatarGenerator(
             provider="sdxl",
             model="sdxl-music",
             asset_root=avatars_dir,
+            api_key="sk-sdxl-test",
         ),
         repository=ArtistProfileRepository(base_path=artists_dir),
         clock=lambda: datetime(2100, 1, 1, 0, 0, 0),

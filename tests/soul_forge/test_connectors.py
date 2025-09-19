@@ -26,9 +26,11 @@ def test_build_persona_generator_deepseek(tmp_path: Path) -> None:
         data_root=tmp_path,
         persona_provider="deepseek",
         persona_model="deepseek-music",
+        persona_api_key="sk-deepseek-test",
     )
     generator = build_persona_generator(settings)
     assert isinstance(generator, LLMTemplatePersonaGenerator)
+    assert generator.api_key == "sk-deepseek-test"
     draft = generator.draft_persona(
         PersonaRequest(
             name="Neon Wasteland",
@@ -46,9 +48,11 @@ def test_build_avatar_generator_sdxl(tmp_path: Path) -> None:
         data_root=tmp_path,
         avatar_provider="sdxl",
         avatar_model="sdxl-music",
+        avatar_api_key="sk-sdxl-test",
     )
     generator = build_avatar_generator(settings)
     assert isinstance(generator, DiffusionAvatarGenerator)
+    assert generator.api_key == "sk-sdxl-test"
     profile = ArtistProfile(
         name="Neon Wasteland",
         persona_tags=("retro",),

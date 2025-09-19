@@ -1,0 +1,9 @@
+pyproject.toml
+src/artist_matrix/__init__.py
+src/artist_matrix.egg-info/PKG-INFO
+src/artist_matrix.egg-info/SOURCES.txt
+src/artist_matrix.egg-info/dependency_links.txt
+src/artist_matrix.egg-info/requires.txt
+src/artist_matrix.egg-info/top_level.txt
+src/artist_matrix/interfaces/__init__.py
+src/artist_matrix/state/__init__.py

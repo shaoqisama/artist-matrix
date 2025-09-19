@@ -26,3 +26,9 @@ Populate each section as milestones introduce concrete implementations.
 - Submit distribution payloads through platform-specific clients, capturing receipts.
 - Store release manifests under `data/releases/<slug>/<title>.json` for auditing.
 - Log analytics per platform to feed dashboards and royalty tracking.
+
+## Workflow Orchestration & State Management
+- `ArtistMatrixGraph` binds Soul Forge, Creation Engine, Echo Chamber, and World Stage nodes.
+- Shared Pydantic schemas (`ArtistManifest`, `TrackManifest`, `ReleaseManifest`) transport data between stages.
+- Hook callbacks expose lifecycle events for logging, analytics, or human approval gates.
+- Integration tests under `tests/integration/` validate cross-node hand-offs and manifest wiring.

@@ -47,7 +47,7 @@ class RecordingAnalytics:
 
 def test_campaign_planner_spacing(profile: ArtistProfile) -> None:
     planner = CampaignPlanner(clock=lambda: datetime(2100, 1, 1, 0, 0, 0))
-    campaign = SocialCampaign(title="Release Week", beats=("Teaser", "Drop", "Recap"), cadence_minutes=60)
+    campaign = SocialCampaign(title="Release Week", platform="twitter", beats=("Teaser", "Drop", "Recap"), cadence_minutes=60)
     slots = list(planner.plan(profile, campaign))
 
     assert len(slots) == 3
@@ -60,7 +60,7 @@ def test_publish_campaign_records_success_and_failure(profile: ArtistProfile) ->
     analytics = RecordingAnalytics()
     service = EchoChamberService([client], analytics_client=analytics)
 
-    campaign = SocialCampaign(title="Signal Boost", beats=("Hello", "Drop", "Recap"), cadence_minutes=30)
+    campaign = SocialCampaign(title="Signal Boost", platform="twitter", beats=("Hello", "Drop", "Recap"), cadence_minutes=30)
 
     result = service.publish_campaign(profile, campaign, platform="twitter", start_at=datetime(2100, 1, 1, 0, 0, 0))
 
@@ -71,7 +71,7 @@ def test_publish_campaign_records_success_and_failure(profile: ArtistProfile) ->
 
 def test_publish_campaign_missing_client(profile: ArtistProfile) -> None:
     service = EchoChamberService([])
-    campaign = SocialCampaign(title="Ghost Post", beats=("Ping",))
+    campaign = SocialCampaign(title="Ghost Post", platform="discord", beats=("Ping",))
 
     with pytest.raises(ValueError):
         service.publish_campaign(profile, campaign, platform="discord")

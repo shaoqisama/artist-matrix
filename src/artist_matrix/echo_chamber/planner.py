@@ -14,6 +14,7 @@ class SocialCampaign:
     """Defines a sequence of social posts for a persona."""
 
     title: str
+    platform: str
     beats: Sequence[str]
     cadence_minutes: int = 120
 

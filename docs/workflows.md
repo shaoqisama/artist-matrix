@@ -20,3 +20,9 @@ Populate each section as milestones introduce concrete implementations.
 - Generate per-platform `SocialPost` entries capturing schedules and copy.
 - Publish through configured API clients with analytics logging for success/failure.
 - Requeue or adjust beats when failures occur, keeping records for downstream dashboards.
+
+## World Stage Distribution Pipeline
+- Validate release metadata against `ReleaseRequest` and ensure manifests exist for tracks/artwork.
+- Submit distribution payloads through platform-specific clients, capturing receipts.
+- Store release manifests under `data/releases/<slug>/<title>.json` for auditing.
+- Log analytics per platform to feed dashboards and royalty tracking.

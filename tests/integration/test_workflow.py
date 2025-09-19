@@ -5,31 +5,18 @@ from pathlib import Path
 
 from artist_matrix.creation_engine import CreationBrief, CreationEngineService, TrackManifestRepository
 from artist_matrix.echo_chamber import EchoChamberService, SocialCampaign
-from artist_matrix.interfaces.creative import AvatarBlueprint, PersonaDraft, PersonaRequest
 from artist_matrix.interfaces.distribution import DistributionReceipt, ReleaseSpec
 from artist_matrix.interfaces.production import ArtworkArtifact, LyricDraft, TrackArtifact
 from artist_matrix.interfaces.social import SocialPost
 from artist_matrix.soul_forge import ArtistProfileRepository, SoulForgeRequest, SoulForgeService
+from artist_matrix.soul_forge.connectors import (
+    DiffusionAvatarGenerator,
+    LLMTemplatePersonaGenerator,
+)
 from artist_matrix.state import JobContext
 from artist_matrix.state.graph import ArtistMatrixGraph
 from artist_matrix.state.jobs import ArtworkJobSpec, TrackJobSpec
 from artist_matrix.world_stage.release import ReleaseManifestRepository, ReleaseRequest, WorldStageService
-
-
-class StubPersonaGenerator:
-    def draft_persona(self, request: PersonaRequest) -> PersonaDraft:
-        return PersonaDraft(
-            name=request.name,
-            persona_tags=request.descriptors or ("cyberpunk",),
-            lyric_style=f"{request.genre} cadence",
-            visual_style="neon glitch",
-            influences=request.influences,
-        )
-
-
-class StubAvatarGenerator:
-    def generate_avatar(self, profile) -> AvatarBlueprint:
-        return AvatarBlueprint(prompt=f"pixel art of {profile.name}", seed=7)
 
 
 class StubLyricGenerator:
@@ -91,10 +78,15 @@ def test_full_workflow(tmp_path: Path) -> None:
     artists_dir = tmp_path / "artists"
     tracks_dir = tmp_path / "tracks"
     releases_dir = tmp_path / "releases"
+    avatars_dir = tmp_path / "avatars"
 
     soul_service = SoulForgeService(
-        persona_generator=StubPersonaGenerator(),
-        avatar_generator=StubAvatarGenerator(),
+        persona_generator=LLMTemplatePersonaGenerator(provider="deepseek", model="deepseek-music"),
+        avatar_generator=DiffusionAvatarGenerator(
+            provider="sdxl",
+            model="sdxl-music",
+            asset_root=avatars_dir,
+        ),
         repository=ArtistProfileRepository(base_path=artists_dir),
         clock=lambda: datetime(2100, 1, 1, 0, 0, 0),
     )
@@ -153,3 +145,6 @@ def test_full_workflow(tmp_path: Path) -> None:
     assert context.release is not None
     assert context.release.platforms == ("spotify",)
     assert social_client.posts
+
+    avatar_asset = avatars_dir / "neon-wasteland-sdxl.json"
+    assert avatar_asset.exists()

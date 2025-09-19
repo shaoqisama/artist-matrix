@@ -55,10 +55,10 @@
 - **Testing & Telemetry**: Add flow tests in `tests/tui/test_generate_flow.py` mocking Soul Forge responses and track instrumentation hooks for debugging.
 
 ## Milestone 9: External Persona & Avatar Connectors
-- Replace fallback persona generator with routed LLM clients (DeepSeek/Claude) conforming to `interfaces/creative.PersonaGenerator`.
-- Swap `_SimpleAvatarGenerator` for SDXL or similar diffusion adapters returning asset paths and metadata.
-- Load API credentials via `ArtistMatrixSettings`; document required env vars in `docs/agents/soul_forge.md` and `README.md`.
-- Update integration tests to mock external services while verifying prompt payloads and manifest enrichment.
+- [x] Replace fallback persona generator with routed LLM clients (DeepSeek/Claude) conforming to `interfaces/creative.PersonaGenerator`.
+- [x] Swap `_SimpleAvatarGenerator` for SDXL or similar diffusion adapters returning asset paths and metadata.
+- [x] Load API credentials via `ArtistMatrixSettings`; document required env vars in `docs/agents/soul_forge.md` and `README.md`.
+- [x] Update integration tests to mock external services while verifying prompt payloads and manifest enrichment.
 
 ## Milestone 10: Wizard UX Enhancements
 - Add step navigation (back/edit) and confirmation screens so users can revise inputs before forging.

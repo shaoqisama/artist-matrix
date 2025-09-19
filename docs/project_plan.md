@@ -52,4 +52,22 @@
 - **Soul Forge Integration**: Invoke `SoulForgeService.generate` with captured data, surface progress states, and render success/error feedback inline.
 - **Avatar Preview Rendering**: Persist avatar blueprint data, display prompt/seed summaries or ASCII placeholders, and prep for future image embedding.
 - **Persistence & Navigation**: Store manifest paths in session state to enable immediate hand-off to creation flows; support cancellation/back navigation gracefully.
-- **Testing & Telemetry**: Author flow tests in `tests/tui/test_generate_flow.py` mocking Soul Forge responses and track instrumentation hooks for debugging.
+- **Testing & Telemetry**: Add flow tests in `tests/tui/test_generate_flow.py` mocking Soul Forge responses and track instrumentation hooks for debugging.
+
+## Milestone 9: External Persona & Avatar Connectors
+- Replace fallback persona generator with routed LLM clients (DeepSeek/Claude) conforming to `interfaces/creative.PersonaGenerator`.
+- Swap `_SimpleAvatarGenerator` for SDXL or similar diffusion adapters returning asset paths and metadata.
+- Load API credentials via `ArtistMatrixSettings`; document required env vars in `docs/agents/soul_forge.md` and `README.md`.
+- Update integration tests to mock external services while verifying prompt payloads and manifest enrichment.
+
+## Milestone 10: Wizard UX Enhancements
+- Add step navigation (back/edit) and confirmation screens so users can revise inputs before forging.
+- Capture additional persona attributes (visual palettes, narrative tone, safety guidelines) aligned with `docs/project_outline.md`.
+- Persist draft state in `SessionState` to resume cancelled sessions without re-entry.
+- Expand TUI regression tests to cover alternate flows, validation errors, and cancellation recovery.
+
+## Milestone 11: Post-Forge Hand-off Automation
+- Offer immediate options to launch Creation Engine briefs or Echo Chamber campaigns using the freshly forged manifest.
+- Pre-populate track and campaign specs from wizard inputs to reduce duplicate typing.
+- Record workflow breadcrumbs in session state for reuse by downstream commands and future CLI automation.
+- Add end-to-end integration coverage ensuring persona creation seamlessly feeds track generation and social planning.

@@ -16,6 +16,8 @@ class ArtistMatrixSettings(BaseSettings):
     data_root: Path = Field(default=_PROJECT_ROOT / "data")
     cache_root: Path = Field(default=_PROJECT_ROOT / ".cache")
     log_level: str = Field(default="INFO")
+    persona_provider: str = Field(default="stub")
+    avatar_provider: str = Field(default="stub")
 
 
 __all__ = ["ArtistMatrixSettings"]

@@ -7,13 +7,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict
 
-from artist_matrix.interfaces.creative import (
-    AvatarBlueprint,
-    PersonaDraft,
-    PersonaGenerator,
-    PersonaRequest,
+from artist_matrix.interfaces.creative import AvatarBlueprint
+from artist_matrix.soul_forge import (
+    ArtistProfile,
+    ArtistProfileRepository,
+    SoulForgeRequest,
+    SoulForgeService,
+    build_avatar_generator,
+    build_persona_generator,
 )
-from artist_matrix.soul_forge import ArtistProfile, ArtistProfileRepository, SoulForgeRequest, SoulForgeService
+from artist_matrix.state import ArtistMatrixSettings
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _ASSET_DIR = _PROJECT_ROOT / "assets" / "tui"
@@ -22,38 +25,6 @@ _ASSET_DIR = _PROJECT_ROOT / "assets" / "tui"
 def _to_sequence(raw: str) -> tuple[str, ...]:
     items = [segment.strip() for segment in raw.split(",") if segment.strip()]
     return tuple(items)
-
-
-class _SimplePersonaGenerator(PersonaGenerator):
-    """Fallback persona generator used when no external LLM is configured."""
-
-    def draft_persona(self, request: PersonaRequest) -> PersonaDraft:
-        influences = tuple(request.influences)
-        descriptors = tuple(request.descriptors)
-        persona_tags = descriptors or (request.mood, "tui-forged")
-        lyric_style = f"{request.genre} narratives"
-        visual_style = f"{request.genre} holographic"
-        safety_notes = "Ensure generated content remains suitable for all audiences."
-        return PersonaDraft(
-            name=request.name,
-            persona_tags=persona_tags,
-            lyric_style=lyric_style,
-            visual_style=visual_style,
-            influences=influences or ("synthetic muse",),
-            safety_notes=safety_notes,
-        )
-
-
-class _SimpleAvatarGenerator:
-    """Fallback avatar generator returning textual prompt metadata."""
-
-    def generate_avatar(self, profile: ArtistProfile) -> AvatarBlueprint:
-        prompt = (
-            f"pixel art portrait of {profile.name} with {profile.visual_style} aesthetics"
-        )
-        return AvatarBlueprint(prompt=prompt, seed=42)
-
-
 @dataclass
 class SessionState:
     last_profile: ArtistProfile | None = None
@@ -83,10 +54,13 @@ class TuiAssets:
 
 
 def _build_default_soul_forge() -> SoulForgeService:
+    settings = ArtistMatrixSettings()
+    persona_gen = build_persona_generator(settings)
+    avatar_gen = build_avatar_generator(settings)
     return SoulForgeService(
-        persona_generator=_SimplePersonaGenerator(),
-        avatar_generator=_SimpleAvatarGenerator(),
-        repository=ArtistProfileRepository(),
+        persona_generator=persona_gen,
+        avatar_generator=avatar_gen,
+        repository=ArtistProfileRepository(base_path=settings.data_root / "artists"),
     )
 
 
@@ -222,6 +196,7 @@ class TuiApp:
                 [
                     " → Avatar prompt preview:",
                     f"   '{avatar.prompt}' (seed={avatar.seed or 'n/a'})",
+                    f"   asset: {avatar.asset_path or 'n/a'}",
                 ]
             )
         self.output("\n".join(summary))

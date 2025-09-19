@@ -26,7 +26,9 @@ class StubSoulForgeService:
             visual_style="neon glitch",
             influences=("Kavinsky",),
         )
-        avatar = AvatarBlueprint(prompt="pixel art", seed=108)
+        avatar_path = self.tmp_path / "neon-wasteland-avatar.txt"
+        avatar_path.write_text("avatar", encoding="utf-8")
+        avatar = AvatarBlueprint(prompt="pixel art", seed=108, asset_path=avatar_path)
         return {
             "profile": profile,
             "manifest_path": manifest_path,

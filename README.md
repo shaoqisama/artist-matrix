@@ -7,6 +7,7 @@ Artist Matrix is a terminal-forward agent framework for crafting AI-first music 
 2. Activate the environment (`source .venv/bin/activate`) or prefix commands with `uv run`.
 3. Run quality checks via `uv run make verify` before opening pull requests.
 4. Launch the retro TUI prototype: `uv run python -m artist_matrix.tui`.
+5. Optional: set `ARTIST_MATRIX_PERSONA_PROVIDER` / `ARTIST_MATRIX_AVATAR_PROVIDER` to swap in custom LLM or diffusion connectors (default `stub`).
 
 ## Project Layout
 - `src/artist_matrix/`: Core packages for each agent node and shared state.

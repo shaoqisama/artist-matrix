@@ -14,3 +14,9 @@ Populate each section as milestones introduce concrete implementations.
 - Render audio artifact with Creation Engine service, storing metadata and file paths.
 - Optionally invoke artwork generator to produce cover art for the track.
 - Persist per-track manifests under `data/artists/<slug>/tracks/<track>.json` with job context.
+
+## Echo Chamber Social Amplification
+- Derive campaign beats and cadence via `CampaignPlanner` using persona tone guidelines.
+- Generate per-platform `SocialPost` entries capturing schedules and copy.
+- Publish through configured API clients with analytics logging for success/failure.
+- Requeue or adjust beats when failures occur, keeping records for downstream dashboards.

@@ -11,6 +11,7 @@ Populate each section as milestones introduce concrete implementations.
 - Configure generators via `ARTIST_MATRIX_PERSONA_PROVIDER` and `ARTIST_MATRIX_AVATAR_PROVIDER` when wiring external services.
 - TUI wizard captures extended attributes (visual palette, narrative tone, safety notes) with back/edit navigation before forging.
 - Optional refinement chat allows operators to add iterative instructions that flow into the persona connector prior to manifest persistence.
+- When `ARTIST_MATRIX_PERSONA_PROVIDER=deepseek` and an API key is set, refinement calls the DeepSeek chat API using templates stored under `prompts/persona/`.
 
 ## Creation Engine Track Production
 - Translate profile + `TrackJobSpec` into lyric draft via lyric generator stub.

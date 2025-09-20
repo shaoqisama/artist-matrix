@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.8",
     "pydantic-settings>=2.5",
+    "httpx>=0.28",
 ]
 
 [project.optional-dependencies]

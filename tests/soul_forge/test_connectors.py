@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 
 from artist_matrix.interfaces.creative import PersonaRequest
+from artist_matrix.soul_forge.connectors import DeepSeekPersonaAgent
+from artist_matrix.soul_forge import connectors
 from artist_matrix.soul_forge.connectors import (
     DiffusionAvatarGenerator,
     LLMTemplatePersonaGenerator,
@@ -82,16 +84,74 @@ def test_deepseek_generator_with_stub_agent(tmp_path: Path) -> None:
     assert draft.name == "Neon Wasteland"
     assert "deepseek" in draft.persona_tags
     assert draft.visual_palette == ("neon magenta",)
-    draft = generator.draft_persona(
-        PersonaRequest(
-            name="Neon Wasteland",
-            genre="synthwave",
-            mood="fierce",
-            influences=("Kavinsky",),
-            descriptors=("retro",),
-        )
+
+
+def test_deepseek_persona_agent_http(monkeypatch, tmp_path: Path) -> None:
+    template = "Name: {name}\nInfluences: {influences}"
+    captured: dict[str, object] = {}
+
+    import json as json_module
+
+    def fake_post(url, headers, json, timeout):  # noqa: ANN001
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["json"] = json
+
+        class _Response:
+            def raise_for_status(self) -> None:
+                pass
+
+            def json(self):  # noqa: ANN001
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json_module.dumps(
+                                    {
+                                        "name": "Neon Wasteland",
+                                        "persona_tags": ["retro"],
+                                        "lyric_style": "synthwave saga",
+                                        "visual_style": "neon",
+                                        "influences": ["Kavinsky"],
+                                        "safety_notes": "Clean.",
+                                        "visual_palette": ["magenta"],
+                                        "narrative_tone": "epic",
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+
+        return _Response()
+
+    monkeypatch.setattr(connectors.httpx, "post", fake_post)
+
+    agent = DeepSeekPersonaAgent(
+        template=template,
+        api_key="sk-test",
+        model="deepseek-chat",
+        endpoint="https://api.deepseek.com/v1/chat/completions",
     )
-    assert "deepseek" in draft.persona_tags or "deepseek" in draft.lyric_style
+
+    variables = PersonaPromptVariables(
+        name="Neon Wasteland",
+        genre="synthwave",
+        mood="fierce",
+        influences=["Kavinsky"],
+        descriptors=["retro"],
+        brief="",
+        visual_palette=["magenta"],
+        narrative_tone="epic",
+        safety_notes="Clean.",
+        refinement_instructions=[],
+    )
+
+    output = agent.invoke(variables)
+
+    assert output.name == "Neon Wasteland"
+    assert captured["headers"]["Authorization"] == "Bearer sk-test"
+    assert captured["json"]["model"] == "deepseek-chat"
 
 
 def test_build_avatar_generator_sdxl(tmp_path: Path) -> None:

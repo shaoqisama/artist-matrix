@@ -28,6 +28,7 @@ The repository is organized around the staged roadmap in `docs/project_plan.md`.
 Current implementation includes:
 - Persona creation with manifest persistence (Soul Forge).
 - Generate Avatar wizard with back/edit navigation plus optional DeepSeek refinement chat for visual palette, narrative tone, and safety-note capture.
+- DeepSeek integration reads prompt templates from `prompts/persona/` and calls the configured API endpoint when the provider and key are set.
 - Track production with lyric/audio/artwork orchestration (Creation Engine).
 - Social amplification planning and analytics stubs (Echo Chamber).
 - Distribution pipeline integration and release manifests (World Stage).

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+from json import JSONDecodeError
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Protocol
+
+import httpx
 
 from pydantic import BaseModel
 
@@ -18,6 +21,30 @@ from artist_matrix.interfaces.creative import (
 )
 from artist_matrix.soul_forge.profiles import ArtistProfile
 from artist_matrix.state import ArtistMatrixSettings
+
+
+class PersonaLLMOutput(BaseModel):
+    name: str
+    persona_tags: list[str]
+    lyric_style: str
+    visual_style: str
+    influences: list[str]
+    safety_notes: str | None = None
+    visual_palette: list[str] = []
+    narrative_tone: str | None = None
+
+
+class PersonaPromptVariables(BaseModel):
+    name: str
+    genre: str
+    mood: str
+    influences: list[str]
+    descriptors: list[str]
+    brief: str | None
+    visual_palette: list[str]
+    narrative_tone: str | None
+    safety_notes: str | None
+    refinement_instructions: list[str]
 
 
 @dataclass
@@ -47,6 +74,77 @@ class StubPersonaGenerator(PersonaGenerator):
 class PersonaPromptAgent(Protocol):
     def invoke(self, variables: PersonaPromptVariables) -> PersonaLLMOutput:
         ...
+
+
+@dataclass
+class DeepSeekPersonaAgent(PersonaPromptAgent):
+    template: str
+    api_key: str
+    model: str
+    endpoint: str
+    timeout: float = 30.0
+    max_attempts: int = 3
+
+    def _render_prompt(self, variables: PersonaPromptVariables) -> str:
+        def join(items: list[str]) -> str:
+            return ", ".join(items) if items else "None"
+        mapping = {
+            "name": variables.name,
+            "genre": variables.genre,
+            "mood": variables.mood,
+            "influences": join(variables.influences),
+            "descriptors": join(variables.descriptors),
+            "brief": variables.brief or "None",
+            "visual_palette": join(variables.visual_palette),
+            "narrative_tone": variables.narrative_tone or "None",
+            "safety_notes": variables.safety_notes or "None",
+            "refinement_instructions": join(variables.refinement_instructions),
+        }
+        return self.template.format(**mapping)
+
+    def invoke(self, variables: PersonaPromptVariables) -> PersonaLLMOutput:
+        prompt = self._render_prompt(variables)
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "You are an AI music persona architect."},
+                {"role": "user", "content": prompt},
+            ],
+            "response_format": {"type": "json_object"},
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        last_error: Exception | None = None
+        for _ in range(max(1, self.max_attempts)):
+            try:
+                response = httpx.post(
+                    self.endpoint,
+                    headers=headers,
+                    json=payload,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+                data = response.json()
+                content = data["choices"][0]["message"]["content"].strip()
+                if content.startswith("```"):
+                    parts = content.split("```")
+                    if len(parts) >= 3:
+                        body = parts[1]
+                        newline_index = body.find("\n")
+                        if newline_index != -1:
+                            body = body[newline_index + 1 :]
+                        content = body.strip()
+                payload_dict = json.loads(content)
+                output = PersonaLLMOutput.model_validate(payload_dict)
+                if variables.safety_notes and output.safety_notes:
+                    if "avoid" in variables.safety_notes.lower() and not output.safety_notes.lower().startswith("avoid"):
+                        raise RuntimeError("DeepSeek output dropped safety instructions")
+                return output
+            except (httpx.HTTPError, KeyError, JSONDecodeError, RuntimeError, Exception) as exc:  # noqa: BLE001
+                last_error = exc
+        raise RuntimeError(f"DeepSeek persona generation failed: {last_error}")
 
 
 @dataclass
@@ -176,12 +274,25 @@ def build_persona_generator(settings: ArtistMatrixSettings) -> PersonaGenerator:
     if provider in {"deepseek", "claude"}:
         api_key = settings.persona_api_key
         model = settings.persona_model or "persona-default"
-        # Real LLM integration can be wired by supplying a PersonaPromptAgent instance.
+        agent: PersonaPromptAgent | None = None
+        if api_key and provider == "deepseek":
+            template_path = settings.prompts_root / "persona" / "deepseek_artist_template.md"
+            try:
+                template = template_path.read_text(encoding="utf-8")
+            except FileNotFoundError:
+                template = DEFAULT_DEEPSEEK_TEMPLATE
+            endpoint = settings.persona_endpoint or "https://api.deepseek.com/v1/chat/completions"
+            agent = DeepSeekPersonaAgent(
+                template=template,
+                api_key=api_key,
+                model=model,
+                endpoint=endpoint,
+            )
         return LLMTemplatePersonaGenerator(
             provider=provider,
             model=model,
             api_key=api_key,
-            prompt_agent=None,
+            prompt_agent=agent,
         )
     raise NotImplementedError(
         f"Persona provider '{settings.persona_provider}' is not implemented."
@@ -214,25 +325,4 @@ __all__ = [
     "build_persona_generator",
     "build_avatar_generator",
 ]
-class PersonaLLMOutput(BaseModel):
-    name: str
-    persona_tags: list[str]
-    lyric_style: str
-    visual_style: str
-    influences: list[str]
-    safety_notes: str | None = None
-    visual_palette: list[str] = []
-    narrative_tone: str | None = None
-
-
-class PersonaPromptVariables(BaseModel):
-    name: str
-    genre: str
-    mood: str
-    influences: list[str]
-    descriptors: list[str]
-    brief: str | None
-    visual_palette: list[str]
-    narrative_tone: str | None
-    safety_notes: str | None
-    refinement_instructions: list[str]
+DEFAULT_DEEPSEEK_TEMPLATE = "You are an AI music persona architect. Name: {name} Genre: {genre} Mood: {mood}. Influences: {influences}. Descriptors: {descriptors}. Brief: {brief}. Visual Palette: {visual_palette}. Narrative Tone: {narrative_tone}. Safety Notes: {safety_notes}. Refinement Instructions: {refinement_instructions}. Respond with strict JSON containing fields name, persona_tags, lyric_style, visual_style, influences, safety_notes, visual_palette, narrative_tone."

@@ -19,6 +19,7 @@ class ArtistMatrixSettings(BaseSettings):
     persona_provider: str = Field(default="stub")
     persona_model: str = Field(default="persona-stub")
     persona_api_key: str | None = Field(default=None)
+    persona_endpoint: str | None = Field(default="https://api.deepseek.com/v1/chat/completions")
     avatar_provider: str = Field(default="stub")
     avatar_model: str = Field(default="sdxl-stub")
     avatar_api_key: str | None = Field(default=None)

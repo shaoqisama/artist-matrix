@@ -66,14 +66,7 @@
 - [x] Persist draft state in `SessionState` to resume cancelled sessions without re-entry.
 - [x] Expand TUI regression tests to cover alternate flows, validation errors, and cancellation recovery.
 
-## Milestone 11: Collaborative Persona Refinement (DeepSeek)
-- [x] Preserve wizard draft as baseline, then invite user into refinement chat with DeepSeek (LLM loop) before final forge.
-- [x] Introduce prompt template registry under `prompts/persona/` with Pydantic models for system/user messages and structured responses.
-- [ ] Implement `DeepSeekPersonaConnector` supporting synchronous “one-shot” refinement plus iterative chat responses, with retry/backoff and safety checks (profane content, guardrails).
-- [x] Update TUI flow to toggle between wizard confirmation and chat refinement, allowing user to accept or redo AI suggestions.
-- [x] Persist refined persona metadata (AI-enhanced fields) while keeping user inputs auditable in manifest.
-- [x] Expand unit/integration tests with mocked DeepSeek chat transcripts, golden prompt snapshots, and rollback scenarios.
-- [x] Document end-to-end setup (env vars, prompt files, refinement workflow) in `docs/agents/soul_forge.md`, `docs/workflows.md`, and `.env.example`.
+- [x] Implement `DeepSeekPersonaConnector` supporting synchronous “one-shot” refinement plus iterative chat responses, with retry/backoff and safety checks (profane content, guardrails).
 
 ## Milestone 12: Post-Forge Hand-off Automation
 - [ ] Offer immediate options to launch Creation Engine briefs or Echo Chamber campaigns using the freshly forged manifest.

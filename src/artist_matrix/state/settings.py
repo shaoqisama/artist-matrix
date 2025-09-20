@@ -22,6 +22,7 @@ class ArtistMatrixSettings(BaseSettings):
     avatar_provider: str = Field(default="stub")
     avatar_model: str = Field(default="sdxl-stub")
     avatar_api_key: str | None = Field(default=None)
+    prompts_root: Path = Field(default=_PROJECT_ROOT / "prompts")
 
 
 __all__ = ["ArtistMatrixSettings"]

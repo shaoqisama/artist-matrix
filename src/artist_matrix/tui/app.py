@@ -36,6 +36,7 @@ class PersonaWizardDraft:
     visual_palette: tuple[str, ...] = ()
     narrative_tone: str = ""
     safety_notes: str = ""
+    refinement_instructions: tuple[str, ...] = ()
 
 
 @dataclass
@@ -150,6 +151,7 @@ class TuiApp:
                     visual_palette=draft.visual_palette,
                     narrative_tone=draft.narrative_tone or None,
                     safety_notes=draft.safety_notes or None,
+                    refinement_instructions=draft.refinement_instructions,
                 )
             )
         except Exception as exc:  # noqa: BLE001
@@ -320,12 +322,19 @@ class TuiApp:
         # Summary + confirmation loop
         while True:
             self.output("\n".join(self._summary_lines(draft)))
-            action = self._input("Action [f]orge / [e]dit / [c]ancel: ").strip().lower()
+            action = self._input("Action [f]orge / [r]efine / [e]dit / [c]ancel: ").strip().lower()
             if action in {"f", "forge"}:
                 return draft
             if action in {"c", "cancel"}:
                 self.session.draft = draft
                 return None
+            if action in {"r", "refine"}:
+                refined = self._refine_with_ai(draft)
+                if refined is None:
+                    self.session.draft = draft
+                    return None
+                draft = refined
+                continue
             if action in {"e", "edit"}:
                 target = self._input(" Step number to edit (blank for first): ").strip()
                 if target.isdigit():
@@ -391,7 +400,78 @@ class TuiApp:
             f" 7. Visual palette  : {fmt(draft.visual_palette)}",
             f" 8. Narrative tone  : {fmt(draft.narrative_tone)}",
             f" 9. Safety notes    : {fmt(draft.safety_notes)}",
+            f"10. Refinement instr: {fmt(draft.refinement_instructions)}",
         ]
+
+    def _refine_with_ai(self, draft: PersonaWizardDraft) -> PersonaWizardDraft | None:
+        generator = getattr(self.soul_forge, "persona_generator", None)
+        if generator is None:
+            self.output("  Persona generator unavailable.")
+            return draft
+        if getattr(generator, "prompt_agent", None) is None:
+            self.output("  No AI provider configured; using heuristic fallback.")
+
+        instructions = list(draft.refinement_instructions)
+        while True:
+            instruction = self._input(
+                " Enter refinement note (blank to finish, 'c' to cancel): "
+            ).strip()
+            if not instruction:
+                if not instructions:
+                    self.output("  No instructions provided; skipping refinement.")
+                    return draft
+                break
+            if instruction.lower() in {"c", "cancel"}:
+                return None
+            instructions.append(instruction)
+            preview = self._generate_preview(draft, instructions)
+            self.output("\n".join(self._summary_lines(preview)))
+            decision = self._input(
+                " Accept refinement? [y]es / [n]o (add another) / [c]ancel: "
+            ).strip().lower()
+            if decision in {"y", "yes"}:
+                preview.refinement_instructions = tuple(instructions)
+                return preview
+            if decision in {"c", "cancel"}:
+                return None
+            if decision in {"n", "no"}:
+                continue
+            self.output("  Enter 'y', 'n', or 'c'.")
+
+        preview = self._generate_preview(draft, instructions)
+        preview.refinement_instructions = tuple(instructions)
+        return preview
+
+    def _generate_preview(
+        self, draft: PersonaWizardDraft, instructions: list[str]
+    ) -> PersonaWizardDraft:
+        request = SoulForgeRequest(
+            name=draft.name,
+            genre=draft.genre,
+            mood=draft.mood,
+            influences=draft.influences or ("experimental muse",),
+            descriptors=draft.descriptors,
+            brief=draft.brief or None,
+            visual_palette=draft.visual_palette,
+            narrative_tone=draft.narrative_tone or None,
+            safety_notes=draft.safety_notes or None,
+            refinement_instructions=instructions,
+        ).to_persona_request()
+
+        generator = self.soul_forge.persona_generator
+        persona = generator.draft_persona(request)
+        return PersonaWizardDraft(
+            name=persona.name,
+            genre=draft.genre,
+            mood=draft.mood,
+            influences=tuple(persona.influences) or draft.influences,
+            descriptors=tuple(persona.persona_tags),
+            brief=draft.brief,
+            visual_palette=tuple(persona.visual_palette) or draft.visual_palette,
+            narrative_tone=persona.narrative_tone or draft.narrative_tone,
+            safety_notes=persona.safety_notes or draft.safety_notes,
+            refinement_instructions=tuple(instructions),
+        )
 
     def _prompt_required(self, prompt: str) -> str:
         while True:

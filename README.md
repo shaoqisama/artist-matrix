@@ -27,7 +27,7 @@ The repository is organized around the staged roadmap in `docs/project_plan.md`.
 ## Status
 Current implementation includes:
 - Persona creation with manifest persistence (Soul Forge).
-- Generate Avatar wizard with back/edit navigation plus visual palette, narrative tone, and safety-note capture.
+- Generate Avatar wizard with back/edit navigation plus optional DeepSeek refinement chat for visual palette, narrative tone, and safety-note capture.
 - Track production with lyric/audio/artwork orchestration (Creation Engine).
 - Social amplification planning and analytics stubs (Echo Chamber).
 - Distribution pipeline integration and release manifests (World Stage).

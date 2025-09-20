@@ -34,6 +34,7 @@ class SoulForgeRequest:
     visual_palette: Iterable[str] = ()
     narrative_tone: str | None = None
     safety_notes: str | None = None
+    refinement_instructions: Iterable[str] = ()
 
     def to_persona_request(self) -> PersonaRequest:
         return PersonaRequest(
@@ -46,6 +47,7 @@ class SoulForgeRequest:
             visual_palette=tuple(self.visual_palette),
             narrative_tone=self.narrative_tone,
             safety_notes=self.safety_notes,
+            refinement_instructions=tuple(self.refinement_instructions),
         )
 
 

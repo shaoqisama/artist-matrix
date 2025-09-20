@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Protocol
+
+from pydantic import BaseModel
 
 from artist_matrix.interfaces.creative import (
     AvatarBlueprint,
@@ -42,14 +44,49 @@ class StubPersonaGenerator(PersonaGenerator):
 
 
 @dataclass
+class PersonaPromptAgent(Protocol):
+    def invoke(self, variables: PersonaPromptVariables) -> PersonaLLMOutput:
+        ...
+
+
+@dataclass
 class LLMTemplatePersonaGenerator(PersonaGenerator):
     """Template-based persona generator mimicking an external LLM response."""
 
     provider: str
     model: str
     api_key: str | None = None
+    prompt_agent: PersonaPromptAgent | None = None
 
     def draft_persona(self, request: PersonaRequest) -> PersonaDraft:
+        if self.prompt_agent and self.api_key:
+            variables = PersonaPromptVariables(
+                name=request.name,
+                genre=request.genre,
+                mood=request.mood,
+                influences=list(request.influences),
+                descriptors=list(request.descriptors),
+                brief=request.brief,
+                visual_palette=list(request.visual_palette),
+                narrative_tone=request.narrative_tone,
+                safety_notes=request.safety_notes,
+                refinement_instructions=list(request.refinement_instructions),
+            )
+            try:
+                payload = self.prompt_agent.invoke(variables)
+            except Exception as exc:  # noqa: BLE001
+                raise RuntimeError(f"AI persona generation failed: {exc}") from exc
+            return PersonaDraft(
+                name=payload.name,
+                persona_tags=tuple(payload.persona_tags),
+                lyric_style=payload.lyric_style,
+                visual_style=payload.visual_style,
+                influences=tuple(payload.influences),
+                safety_notes=payload.safety_notes,
+                visual_palette=tuple(payload.visual_palette),
+                narrative_tone=payload.narrative_tone,
+            )
+
         influences = tuple(request.influences) or ("experimental muse",)
         descriptors = tuple(request.descriptors)
         persona_tags = descriptors or (request.genre, self.provider)
@@ -62,6 +99,8 @@ class LLMTemplatePersonaGenerator(PersonaGenerator):
             safety_notes += " (api key supplied)"
         visual_palette = tuple(request.visual_palette) or (f"{request.genre} neon",)
         narrative_tone = request.narrative_tone or f"{request.mood} chronicle"
+        if request.refinement_instructions:
+            narrative_tone = f"{narrative_tone} | {'; '.join(request.refinement_instructions)}"
         return PersonaDraft(
             name=request.name,
             persona_tags=persona_tags,
@@ -135,11 +174,14 @@ def build_persona_generator(settings: ArtistMatrixSettings) -> PersonaGenerator:
     if provider in {"stub", "local"}:
         return StubPersonaGenerator()
     if provider in {"deepseek", "claude"}:
+        api_key = settings.persona_api_key
         model = settings.persona_model or "persona-default"
+        # Real LLM integration can be wired by supplying a PersonaPromptAgent instance.
         return LLMTemplatePersonaGenerator(
             provider=provider,
             model=model,
-            api_key=settings.persona_api_key,
+            api_key=api_key,
+            prompt_agent=None,
         )
     raise NotImplementedError(
         f"Persona provider '{settings.persona_provider}' is not implemented."
@@ -172,3 +214,25 @@ __all__ = [
     "build_persona_generator",
     "build_avatar_generator",
 ]
+class PersonaLLMOutput(BaseModel):
+    name: str
+    persona_tags: list[str]
+    lyric_style: str
+    visual_style: str
+    influences: list[str]
+    safety_notes: str | None = None
+    visual_palette: list[str] = []
+    narrative_tone: str | None = None
+
+
+class PersonaPromptVariables(BaseModel):
+    name: str
+    genre: str
+    mood: str
+    influences: list[str]
+    descriptors: list[str]
+    brief: str | None
+    visual_palette: list[str]
+    narrative_tone: str | None
+    safety_notes: str | None
+    refinement_instructions: list[str]

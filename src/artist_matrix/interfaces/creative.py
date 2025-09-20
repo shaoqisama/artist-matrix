@@ -25,6 +25,7 @@ class PersonaRequest:
     visual_palette: Sequence[str] = ()
     narrative_tone: str | None = None
     safety_notes: str | None = None
+    refinement_instructions: Sequence[str] = ()
 
 
 @dataclass(frozen=True)

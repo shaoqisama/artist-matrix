@@ -156,8 +156,10 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
                         content = body.strip()
                 payload_dict = json.loads(content)
                 output = PersonaLLMOutput.model_validate(payload_dict)
-                if variables.safety_notes and output.safety_notes:
-                    if "avoid" in variables.safety_notes.lower() and not output.safety_notes.lower().startswith("avoid"):
+                if variables.safety_notes:
+                    expected = variables.safety_notes.lower()
+                    returned = (output.safety_notes or "").lower()
+                    if "avoid" in expected and "avoid" not in returned and "explicit" not in returned:
                         raise RuntimeError("DeepSeek output dropped safety instructions")
                 logger.info(
                     "DeepSeek persona success",

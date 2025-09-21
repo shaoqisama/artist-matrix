@@ -11,7 +11,11 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 class ArtistMatrixSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="ARTIST_MATRIX_")
+    model_config = SettingsConfigDict(
+        env_prefix="ARTIST_MATRIX_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
     data_root: Path = Field(default=_PROJECT_ROOT / "data")
     cache_root: Path = Field(default=_PROJECT_ROOT / ".cache")
@@ -20,6 +24,7 @@ class ArtistMatrixSettings(BaseSettings):
     persona_model: str = Field(default="persona-stub")
     persona_api_key: str | None = Field(default=None)
     persona_endpoint: str | None = Field(default="https://api.deepseek.com/v1/chat/completions")
+    persona_log_dir: Path | None = Field(default=None)
     avatar_provider: str = Field(default="stub")
     avatar_model: str = Field(default="sdxl-stub")
     avatar_api_key: str | None = Field(default=None)

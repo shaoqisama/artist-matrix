@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+from logging import Handler
 from json import JSONDecodeError
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +23,10 @@ from artist_matrix.interfaces.creative import (
 )
 from artist_matrix.soul_forge.profiles import ArtistProfile
 from artist_matrix.state import ArtistMatrixSettings
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class PersonaLLMOutput(BaseModel):
@@ -84,6 +90,7 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
     endpoint: str
     timeout: float = 30.0
     max_attempts: int = 3
+    log_dir: Path | None = None
 
     def _render_prompt(self, variables: PersonaPromptVariables) -> str:
         def join(items: list[str]) -> str:
@@ -117,7 +124,10 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
             "Content-Type": "application/json",
         }
         last_error: Exception | None = None
-        for _ in range(max(1, self.max_attempts)):
+        for attempt in range(1, max(1, self.max_attempts) + 1):
+            logger.info(
+                "DeepSeek persona request", extra={"persona": variables.name, "attempt": attempt}
+            )
             try:
                 response = httpx.post(
                     self.endpoint,
@@ -128,6 +138,14 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
                 response.raise_for_status()
                 data = response.json()
                 content = data["choices"][0]["message"]["content"].strip()
+                if self.log_dir:
+                    self.log_dir.mkdir(parents=True, exist_ok=True)
+                    log_path = self.log_dir / f"deepseek_{variables.name}_{attempt}.json"
+                    log_payload = {
+                        "request": payload,
+                        "response": data,
+                    }
+                    log_path.write_text(json.dumps(log_payload, indent=2), encoding="utf-8")
                 if content.startswith("```"):
                     parts = content.split("```")
                     if len(parts) >= 3:
@@ -141,9 +159,25 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
                 if variables.safety_notes and output.safety_notes:
                     if "avoid" in variables.safety_notes.lower() and not output.safety_notes.lower().startswith("avoid"):
                         raise RuntimeError("DeepSeek output dropped safety instructions")
+                logger.info(
+                    "DeepSeek persona success",
+                    extra={
+                        "persona": variables.name,
+                        "attempt": attempt,
+                        "provider": self.model,
+                    },
+                )
                 return output
             except (httpx.HTTPError, KeyError, JSONDecodeError, RuntimeError, Exception) as exc:  # noqa: BLE001
                 last_error = exc
+                logger.warning(
+                    "DeepSeek persona attempt failed",
+                    extra={
+                        "persona": variables.name,
+                        "attempt": attempt,
+                        "error": str(exc),
+                    },
+                )
         raise RuntimeError(f"DeepSeek persona generation failed: {last_error}")
 
 
@@ -282,11 +316,22 @@ def build_persona_generator(settings: ArtistMatrixSettings) -> PersonaGenerator:
             except FileNotFoundError:
                 template = DEFAULT_DEEPSEEK_TEMPLATE
             endpoint = settings.persona_endpoint or "https://api.deepseek.com/v1/chat/completions"
+            log_dir = settings.persona_log_dir
+            if log_dir:
+                log_dir.mkdir(parents=True, exist_ok=True)
+                global _persona_log_handler  # noqa: PLW0603
+                if _persona_log_handler is None:
+                    handler = logging.FileHandler(log_dir / "deepseek_persona.log")
+                    formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+                    handler.setFormatter(formatter)
+                    logger.addHandler(handler)
+                    _persona_log_handler = handler
             agent = DeepSeekPersonaAgent(
                 template=template,
                 api_key=api_key,
                 model=model,
                 endpoint=endpoint,
+                log_dir=log_dir,
             )
         return LLMTemplatePersonaGenerator(
             provider=provider,
@@ -326,3 +371,4 @@ __all__ = [
     "build_avatar_generator",
 ]
 DEFAULT_DEEPSEEK_TEMPLATE = "You are an AI music persona architect. Name: {name} Genre: {genre} Mood: {mood}. Influences: {influences}. Descriptors: {descriptors}. Brief: {brief}. Visual Palette: {visual_palette}. Narrative Tone: {narrative_tone}. Safety Notes: {safety_notes}. Refinement Instructions: {refinement_instructions}. Respond with strict JSON containing fields name, persona_tags, lyric_style, visual_style, influences, safety_notes, visual_palette, narrative_tone."
+_persona_log_handler: Handler | None = None

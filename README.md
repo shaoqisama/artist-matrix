@@ -29,6 +29,7 @@ Current implementation includes:
 - Persona creation with manifest persistence (Soul Forge).
 - Generate Avatar wizard with back/edit navigation plus optional DeepSeek refinement chat for visual palette, narrative tone, and safety-note capture.
 - DeepSeek integration reads prompt templates from `prompts/persona/` and calls the configured API endpoint when the provider and key are set.
+- Optional logging: set `ARTIST_MATRIX_PERSONA_LOG_DIR` to capture DeepSeek request/response JSON artifacts for debugging.
 - Track production with lyric/audio/artwork orchestration (Creation Engine).
 - Social amplification planning and analytics stubs (Echo Chamber).
 - Distribution pipeline integration and release manifests (World Stage).

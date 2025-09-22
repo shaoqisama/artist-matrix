@@ -18,12 +18,13 @@ def test_main_menu_snapshot() -> None:
     assert menu == load_snapshot("test_shell--main_menu.txt")
 
 
-def test_select_branch_without_persona() -> None:
-    inputs: Iterator[str] = iter(["2", "q"])
+def test_select_branch_without_persona(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(tmp_path))
+
+    inputs: Iterator[str] = iter(["q"])
     captured: list[str] = []
 
     app = TuiApp(input_func=lambda _: next(inputs), output_func=captured.append)
-    app.run()
+    app.handle_select()
 
-    assert any("No personas forged" in line for line in captured)
-    assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."
+    assert any("No personas available" in line for line in captured)

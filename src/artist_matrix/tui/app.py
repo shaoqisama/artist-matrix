@@ -17,6 +17,7 @@ from artist_matrix.soul_forge import (
     build_persona_generator,
 )
 from artist_matrix.state import ArtistMatrixSettings
+from pydantic import ValidationError
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _ASSET_DIR = _PROJECT_ROOT / "assets" / "tui"
@@ -37,6 +38,11 @@ class PersonaWizardDraft:
     narrative_tone: str = ""
     safety_notes: str = ""
     refinement_instructions: tuple[str, ...] = ()
+
+@dataclass
+class PersonaRecord:
+    path: Path
+    manifest: dict[str, object]
 
 
 @dataclass
@@ -68,8 +74,7 @@ class TuiAssets:
         return self._palette_cache
 
 
-def _build_default_soul_forge() -> SoulForgeService:
-    settings = ArtistMatrixSettings()
+def _build_default_soul_forge(settings: ArtistMatrixSettings) -> SoulForgeService:
     persona_gen = build_persona_generator(settings)
     avatar_gen = build_avatar_generator(settings)
     return SoulForgeService(
@@ -94,7 +99,8 @@ class TuiApp:
         self._input = input_func or input
         self._output = output_func or print
         self.assets = assets or TuiAssets()
-        self.soul_forge = soul_forge_service or _build_default_soul_forge()
+        self.settings = ArtistMatrixSettings()
+        self.soul_forge = soul_forge_service or _build_default_soul_forge(self.settings)
         self.session = session or SessionState()
 
     def build_main_menu(self) -> str:
@@ -204,18 +210,127 @@ class TuiApp:
 
     def handle_select(self) -> None:
         self.output("\n>> Accessing artist archives...")
-        if self.session.last_profile and self.session.last_manifest_path:
-            profile = self.session.last_profile
-            manifest_path = self.session.last_manifest_path
+        records = self._load_persona_records()
+        if not records:
             self.output(
-                f" Most recent persona: {profile.name} ({profile.slug})\n"
-                f" Manifest: {manifest_path}"
+                " No personas available. Use 'Generate Avatar' to forge a new profile."
             )
             return
 
-        self.output(
-            " No personas forged this session. Run 'Generate Avatar' to craft one."
+        while True:
+            self.output("\nAvailable personas:")
+            for idx, record in enumerate(records, 1):
+                manifest = record.manifest
+                name = manifest.get("name", "<unknown>")
+                slug = manifest.get("slug", "?")
+                lyric = manifest.get("lyric_style", "n/a")
+                self.output(f" [{idx}] {name} ({slug}) :: {lyric}")
+
+            choice = self._input("Select persona number or Q to cancel: ").strip().lower()
+            if choice in {"q", "quit", "exit"}:
+                self.output(" Selection cancelled; returning to main menu.")
+                return
+            if not choice.isdigit():
+                self.output("  Enter a valid number or Q to cancel.")
+                continue
+
+            index = int(choice) - 1
+            if index < 0 or index >= len(records):
+                self.output("  Invalid selection. Try again.")
+                continue
+
+            record = records[index]
+            self.output("\n".join(self._format_manifest_preview(record.manifest)))
+            if self._prompt_confirm("Load this persona? (y/n)"):
+                if self._apply_persona_selection(record):
+                    self.output(
+                        f" Persona '{record.manifest.get('name', '<unknown>')}' loaded into session."
+                    )
+                    return
+                self.output("  Unable to load persona; select another entry.")
+
+    def _load_persona_records(self) -> list[PersonaRecord]:
+        artists_dir = self.settings.data_root / "artists"
+        if not artists_dir.exists():
+            return []
+
+        records: list[PersonaRecord] = []
+        for path in sorted(artists_dir.glob("*.json")):
+            try:
+                manifest = json.loads(path.read_text(encoding="utf-8"))
+                records.append(PersonaRecord(path=path, manifest=manifest))
+            except (OSError, json.JSONDecodeError) as exc:
+                self.output(f"  Skipping corrupt manifest {path.name}: {exc}")
+        return records
+
+    def _format_manifest_preview(self, manifest: dict[str, object]) -> list[str]:
+        def fmt_list(value: object) -> str:
+            items = self._as_str_list(value)
+            return ", ".join(items) if items else "—"
+
+        return [
+            "",
+            ":: Persona Preview ::",
+            f" Name       : {manifest.get('name', '<unknown>')}",
+            f" Slug       : {manifest.get('slug', '—')}",
+            f" Lyric style: {manifest.get('lyric_style', '—')}",
+            f" Visual mode: {manifest.get('visual_style', '—')}",
+            f" Tags       : {fmt_list(manifest.get('persona_tags', []))}",
+            f" Influences : {fmt_list(manifest.get('influences', []))}",
+            f" Visuals    : {fmt_list(manifest.get('visual_palette', []))}",
+            f" Narrative  : {manifest.get('narrative_tone', '—')}",
+            f" Safeguards : {manifest.get('safety_notes', '—')}",
+        ]
+
+    def _apply_persona_selection(self, record: PersonaRecord) -> bool:
+        manifest = record.manifest
+        path = record.path
+        try:
+            profile = ArtistProfile.model_validate(manifest)
+        except ValidationError as exc:
+            self.output(f"  Manifest validation failed: {exc}")
+            return False
+
+        avatar_data = manifest.get("avatar")
+        avatar = None
+        if isinstance(avatar_data, dict):
+            asset_path = avatar_data.get("asset_path")
+            avatar = AvatarBlueprint(
+                prompt=avatar_data.get("prompt", ""),
+                seed=avatar_data.get("seed"),
+                asset_path=Path(asset_path) if asset_path else None,
+            )
+
+        self.session.last_profile = profile
+        self.session.last_manifest_path = path
+        self.session.last_avatar = avatar
+        self.session.draft = PersonaWizardDraft(
+            name=profile.name,
+            genre=str(manifest.get("genre", profile.lyric_style)),
+            mood=str(manifest.get("mood", "")),
+            influences=tuple(self._as_str_list(manifest.get("influences", profile.influences))),
+            descriptors=tuple(self._as_str_list(manifest.get("persona_tags", profile.persona_tags))),
+            brief=self._as_str(manifest.get("brief", "")),
+            visual_palette=tuple(self._as_str_list(manifest.get("visual_palette", []))),
+            narrative_tone=self._as_str(manifest.get("narrative_tone", profile.lyric_style), profile.lyric_style),
+            safety_notes=self._as_str(manifest.get("safety_notes", profile.safety_notes or "")),
+            refinement_instructions=tuple(self._as_str_list(manifest.get("refinement_instructions", []))),
         )
+        return True
+
+    def _as_str_list(self, value: object) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, (list, tuple, set)):
+            return [str(item) for item in value]
+        return []
+
+    def _as_str(self, value: object, default: str = "") -> str:
+        if isinstance(value, str):
+            return value
+        if value is None:
+            return default
+        return str(value)
 
     def output(self, message: str) -> None:
         self._output(message)

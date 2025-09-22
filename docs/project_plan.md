@@ -68,7 +68,14 @@
 
 - [x] Implement `DeepSeekPersonaConnector` supporting synchronous “one-shot” refinement plus iterative chat responses, with retry/backoff and safety checks (profane content, guardrails).
 
-## Milestone 12: Post-Forge Hand-off Automation
+## Milestone 12: TUI Avatar Selection UX
+- [ ] Enumerate stored personas from `data/artists/` (respecting the configured data root) and display them in a friendly list with key metadata.
+- [ ] Allow users to preview selected manifest details (lyric/visual styles, avatar assets) before confirming the selection.
+- [ ] Persist the chosen persona in session state for downstream flows (Creation Engine, Echo Chamber, World Stage).
+- [ ] Handle missing/invalid manifests gracefully with retry prompts and logging.
+- [ ] Expand TUI tests covering selection flow, empty archive handling, and manifest preview output.
+
+## Milestone 13: Post-Forge Hand-off Automation
 - [ ] Offer immediate options to launch Creation Engine briefs or Echo Chamber campaigns using the freshly forged manifest.
 - [ ] Pre-populate track and campaign specs from wizard inputs to reduce duplicate typing.
 - [ ] Record workflow breadcrumbs in session state for reuse by downstream commands and future CLI automation.

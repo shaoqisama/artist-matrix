@@ -76,7 +76,7 @@
 - [x] Expand TUI tests covering selection flow, empty archive handling, and manifest preview output.
 
 ## Milestone 13: Post-Forge Hand-off Automation
-- [ ] Extend the main TUI menu with dedicated entries for Creation Engine (track briefs) and Echo Chamber (campaigns), using the currently selected persona.
-- [ ] Offer immediate follow-up prompts after forging a persona to jump into the chosen workflow without returning to the main menu.
-- [ ] Pre-populate brief/campaign templates with persona metadata (genre, mood, tags, safety notes) and persist breadcrumbs for automation.
-- [ ] Expand integration tests to cover hand-offs and document the workflow in README/agents/workflows guides.
+- [x] Extend the main TUI menu with dedicated entries for Creation Engine (track briefs) and Echo Chamber (campaigns), using the currently selected persona.
+- [x] Offer immediate follow-up prompts after forging a persona to jump into the chosen workflow without returning to the main menu.
+- [x] Pre-populate brief/campaign templates with persona metadata (genre, mood, tags, safety notes) and persist breadcrumbs for automation.
+- [x] Expand integration tests to cover hand-offs and document the workflow in README/agents/workflows guides.

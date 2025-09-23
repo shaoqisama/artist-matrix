@@ -14,5 +14,11 @@ __pycache__/
 # Packaging metadata
 *.egg-info/
 
+# Local configuration & generated data
+.env
+data/artists/
+data/avatars/
+logs/
+
 # macOS metadata
 .DS_Store

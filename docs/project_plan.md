@@ -69,14 +69,14 @@
 - [x] Implement `DeepSeekPersonaConnector` supporting synchronous “one-shot” refinement plus iterative chat responses, with retry/backoff and safety checks (profane content, guardrails).
 
 ## Milestone 12: TUI Avatar Selection UX
-- [ ] Enumerate stored personas from `data/artists/` (respecting the configured data root) and display them in a friendly list with key metadata.
-- [ ] Allow users to preview selected manifest details (lyric/visual styles, avatar assets) before confirming the selection.
-- [ ] Persist the chosen persona in session state for downstream flows (Creation Engine, Echo Chamber, World Stage).
-- [ ] Handle missing/invalid manifests gracefully with retry prompts and logging.
-- [ ] Expand TUI tests covering selection flow, empty archive handling, and manifest preview output.
+- [x] Enumerate stored personas from `data/artists/` (respecting the configured data root) and display them in a friendly list with key metadata.
+- [x] Allow users to preview selected manifest details (lyric/visual styles, avatar assets) before confirming the selection.
+- [x] Persist the chosen persona in session state for downstream flows (Creation Engine, Echo Chamber, World Stage).
+- [x] Handle missing/invalid manifests gracefully with retry prompts and logging.
+- [x] Expand TUI tests covering selection flow, empty archive handling, and manifest preview output.
 
 ## Milestone 13: Post-Forge Hand-off Automation
-- [ ] Offer immediate options to launch Creation Engine briefs or Echo Chamber campaigns using the freshly forged manifest.
-- [ ] Pre-populate track and campaign specs from wizard inputs to reduce duplicate typing.
-- [ ] Record workflow breadcrumbs in session state for reuse by downstream commands and future CLI automation.
-- [ ] Add end-to-end integration coverage ensuring persona creation seamlessly feeds track generation and social planning.
+- [ ] Extend the main TUI menu with dedicated entries for Creation Engine (track briefs) and Echo Chamber (campaigns), using the currently selected persona.
+- [ ] Offer immediate follow-up prompts after forging a persona to jump into the chosen workflow without returning to the main menu.
+- [ ] Pre-populate brief/campaign templates with persona metadata (genre, mood, tags, safety notes) and persist breadcrumbs for automation.
+- [ ] Expand integration tests to cover hand-offs and document the workflow in README/agents/workflows guides.

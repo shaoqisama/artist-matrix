@@ -9,4 +9,6 @@
 
  [1] Generate Avatar    -> Soul Forge
  [2] Select Avatar      -> Archives
+ [3] Launch Creation    -> Track Forge
+ [4] Launch Echo Chamber-> Broadcast
  [Q] Quit Terminal      -> Sleep Cycle

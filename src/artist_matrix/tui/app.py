@@ -16,6 +16,9 @@ from artist_matrix.soul_forge import (
     build_avatar_generator,
     build_persona_generator,
 )
+from artist_matrix.creation_engine import CreationBrief
+from artist_matrix.creation_engine.service import ArtworkJobSpec, TrackJobSpec
+from artist_matrix.echo_chamber import SocialCampaign
 from artist_matrix.state import ArtistMatrixSettings
 from pydantic import ValidationError
 
@@ -51,6 +54,8 @@ class SessionState:
     last_manifest_path: Path | None = None
     last_avatar: AvatarBlueprint | None = None
     draft: PersonaWizardDraft = field(default_factory=PersonaWizardDraft)
+    track_brief: CreationBrief | None = None
+    campaign_plan: SocialCampaign | None = None
 
 
 @dataclass
@@ -117,6 +122,8 @@ class TuiApp:
             "",
             " [1] Generate Avatar    -> Soul Forge",
             " [2] Select Avatar      -> Archives",
+            " [3] Launch Creation    -> Track Forge",
+            " [4] Launch Echo Chamber-> Broadcast",
             " [Q] Quit Terminal      -> Sleep Cycle",
             "",
         ]
@@ -130,6 +137,10 @@ class TuiApp:
                 self.handle_generate()
             elif choice in {"2", "s", "select"}:
                 self.handle_select()
+            elif choice in {"3", "c", "creation"}:
+                self.handle_creation_engine()
+            elif choice in {"4", "e", "echo"}:
+                self.handle_echo_chamber()
             elif choice in {"q", "quit", "exit"}:
                 self.output("Shutting down Artist Matrix shell. See you in the wasteland.")
                 break
@@ -174,6 +185,7 @@ class TuiApp:
 
         if isinstance(profile, ArtistProfile):
             self.session.last_profile = profile
+            self._update_suggestions(profile, draft)
         self.session.last_manifest_path = manifest_path
         if isinstance(avatar, AvatarBlueprint):
             self.session.last_avatar = avatar
@@ -190,6 +202,7 @@ class TuiApp:
                     f" → Visual mode: {profile.visual_style}",
                 ]
             )
+            self._update_suggestions(profile, draft)
         if isinstance(avatar, AvatarBlueprint):
             summary.extend(
                 [
@@ -207,13 +220,14 @@ class TuiApp:
         if draft.safety_notes:
             summary.append(f" → Safety notes : {draft.safety_notes}")
         self.output("\n".join(summary))
+        self._post_persona_prompt()
 
     def handle_select(self) -> None:
         self.output("\n>> Accessing artist archives...")
         records = self._load_persona_records()
         if not records:
             self.output(
-                " No personas available. Use 'Generate Avatar' to forge a new profile."
+            " No personas available. Use 'Generate Avatar' to forge a new profile."
             )
             return
 
@@ -246,6 +260,7 @@ class TuiApp:
                     self.output(
                         f" Persona '{record.manifest.get('name', '<unknown>')}' loaded into session."
                     )
+                    self._post_persona_prompt()
                     return
                 self.output("  Unable to load persona; select another entry.")
 
@@ -316,6 +331,10 @@ class TuiApp:
             safety_notes=self._as_str(manifest.get("safety_notes", profile.safety_notes or "")),
             refinement_instructions=tuple(self._as_str_list(manifest.get("refinement_instructions", []))),
         )
+        self._update_suggestions(profile, self.session.draft)
+        self.output(
+            " Use menu option 3 or 4 to launch Creation Engine or Echo Chamber with this persona."
+        )
         return True
 
     def _as_str_list(self, value: object) -> list[str]:
@@ -331,6 +350,93 @@ class TuiApp:
         if value is None:
             return default
         return str(value)
+
+    def _update_suggestions(self, profile: ArtistProfile, draft: PersonaWizardDraft) -> None:
+        influences = list(draft.influences) or list(profile.influences)
+        track_title = f"{profile.name} Anthem"
+        track_spec = TrackJobSpec(
+            title=track_title,
+            mood=draft.mood or "inspired",
+            tempo_bpm=None,
+            key=None,
+            references=influences[:3],
+            narrative=draft.brief or draft.narrative_tone or "New narrative",
+        )
+        artwork_spec = ArtworkJobSpec(
+            title=f"{profile.name} Cover",
+            style=profile.visual_style,
+            references=list(draft.visual_palette)[:3],
+            seed=42,
+        )
+        creation_brief = CreationBrief(
+            track=track_spec,
+            artwork=artwork_spec,
+            narrative=draft.narrative_tone or draft.brief,
+        )
+
+        beats = [
+            f"Meet {profile.name}",
+            f"Share {track_title}",
+            "Tease upcoming drop",
+        ]
+        campaign = SocialCampaign(
+            title=f"{profile.name} Launch",
+            platform="echo",
+            beats=tuple(beats),
+            cadence_minutes=90,
+        )
+
+        self.session.track_brief = creation_brief
+        self.session.campaign_plan = campaign
+
+    def _post_persona_prompt(self) -> None:
+        while True:
+            selection = self._input(
+                "Next action [c]reation engine / [e]cho chamber / [m]ain menu: "
+            ).strip().lower()
+            if selection in {"c", "creation", "3"}:
+                self.handle_creation_engine()
+                return
+            if selection in {"e", "echo", "4"}:
+                self.handle_echo_chamber()
+                return
+            if selection in {"m", "menu", ""}:
+                return
+            self.output("  Enter 'c', 'e', or 'm'.")
+
+    def handle_creation_engine(self) -> None:
+        self.output("\n>> Creation Engine // Suggested Brief")
+        brief = self.session.track_brief
+        if not brief:
+            self.output(" No persona selected. Generate or select a profile first.")
+            return
+        track = brief.track
+        self.output(f" Title       : {track.title}")
+        self.output(f" Mood        : {track.mood}")
+        self.output(f" References  : {', '.join(track.references) if track.references else '—'}")
+        self.output(f" Narrative   : {track.narrative or '—'}")
+        if brief.artwork:
+            self.output(" Artwork")
+            self.output(f"  Style      : {brief.artwork.style}")
+            refs = brief.artwork.references or []
+            self.output(f"  References : {', '.join(refs) if refs else '—'}")
+        if brief.narrative:
+            self.output(f" Campaign narrative: {brief.narrative}")
+        self.output(" Use this draft to seed Creation Engine workflows.")
+
+    def handle_echo_chamber(self) -> None:
+        self.output("\n>> Echo Chamber // Campaign Plan")
+        campaign = self.session.campaign_plan
+        if not campaign:
+            self.output(" No persona selected. Generate or select a profile first.")
+            return
+        self.output(f" Title       : {campaign.title}")
+        self.output(f" Platform    : {campaign.platform}")
+        self.output(f" Cadence     : every {campaign.cadence_minutes} minutes")
+        self.output(" Beats:")
+        for idx, beat in enumerate(campaign.beats, 1):
+            self.output(f"  {idx}. {beat}")
+        self.output(" Use this plan to seed Echo Chamber campaigns.")
 
     def output(self, message: str) -> None:
         self._output(message)

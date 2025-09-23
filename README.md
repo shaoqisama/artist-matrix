@@ -30,6 +30,7 @@ Current implementation includes:
 - Generate Avatar wizard with back/edit navigation plus optional DeepSeek refinement chat for visual palette, narrative tone, and safety-note capture.
 - DeepSeek integration reads prompt templates from `prompts/persona/` and calls the configured API endpoint when the provider and key are set.
 - Optional logging: set `ARTIST_MATRIX_PERSONA_LOG_DIR` to capture DeepSeek request/response JSON artifacts for debugging.
+- New TUI options let you jump straight into Creation Engine or Echo Chamber with pre-filled briefs and campaign beats after forging/selecting a persona.
 - Track production with lyric/audio/artwork orchestration (Creation Engine).
 - Social amplification planning and analytics stubs (Echo Chamber).
 - Distribution pipeline integration and release manifests (World Stage).

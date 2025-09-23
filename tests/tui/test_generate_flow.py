@@ -85,6 +85,7 @@ def test_generate_avatar_flow_success(tmp_path: Path, stub_service: StubSoulForg
             "epic monologue",  # narrative tone
             "avoid explicit content",  # safety notes
             "f",  # summary action -> forge
+            "m",  # back to menu
             "q",  # exit application
         ]
     )
@@ -133,6 +134,7 @@ def test_generate_avatar_flow_edit_back(tmp_path: Path, stub_service: StubSoulFo
             ".",
             ".",
             "f",
+            "m",
             "q",
         ]
     )
@@ -171,6 +173,7 @@ def test_generate_avatar_flow_refine_with_ai(tmp_path: Path, stub_service: StubS
             "Add cyberpunk edge",
             "y",
             "f",
+            "m",
             "q",
         ]
     )

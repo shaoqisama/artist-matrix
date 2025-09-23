@@ -43,7 +43,7 @@ def manifest_dir(tmp_path: Path) -> Path:
 def test_select_avatar_flow(monkeypatch, manifest_dir: Path) -> None:
     monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(manifest_dir))
 
-    inputs: Iterator[str] = iter(["1", "y"])
+    inputs: Iterator[str] = iter(["1", "y", "m"])
     outputs: list[str] = []
 
     session = SessionState()
@@ -75,3 +75,34 @@ def test_select_avatar_empty(monkeypatch, tmp_path: Path) -> None:
     app.handle_select()
 
     assert any("No personas available" in line for line in outputs)
+
+
+def test_creation_engine_suggestion(monkeypatch, manifest_dir: Path) -> None:
+    monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(manifest_dir))
+
+    outputs: list[str] = []
+    app = TuiApp(input_func=lambda _: "", output_func=outputs.append)
+    records = app._load_persona_records()
+    assert records
+    app._apply_persona_selection(records[0])
+    outputs.clear()
+
+    app.handle_creation_engine()
+
+    assert any("Creation Engine" in line for line in outputs)
+    assert any("Title" in line for line in outputs)
+
+
+def test_echo_chamber_suggestion(monkeypatch, manifest_dir: Path) -> None:
+    monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(manifest_dir))
+
+    outputs: list[str] = []
+    app = TuiApp(input_func=lambda _: "", output_func=outputs.append)
+    records = app._load_persona_records()
+    app._apply_persona_selection(records[0])
+    outputs.clear()
+
+    app.handle_echo_chamber()
+
+    assert any("Echo Chamber" in line for line in outputs)
+    assert any("Beats:" in line for line in outputs)

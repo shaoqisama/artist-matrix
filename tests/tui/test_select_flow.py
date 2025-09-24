@@ -79,6 +79,8 @@ def test_select_avatar_empty(monkeypatch, tmp_path: Path) -> None:
 
 def test_creation_engine_suggestion(monkeypatch, manifest_dir: Path) -> None:
     monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(manifest_dir))
+    monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
+    monkeypatch.setenv("ARTIST_MATRIX_CREATION_AUDIO_PROVIDER", "stub")
 
     outputs: list[str] = []
     app = TuiApp(input_func=lambda _: "", output_func=outputs.append)
@@ -95,6 +97,8 @@ def test_creation_engine_suggestion(monkeypatch, manifest_dir: Path) -> None:
 
 def test_echo_chamber_suggestion(monkeypatch, manifest_dir: Path) -> None:
     monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(manifest_dir))
+    monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
+    monkeypatch.setenv("ARTIST_MATRIX_CREATION_AUDIO_PROVIDER", "stub")
 
     outputs: list[str] = []
     app = TuiApp(input_func=lambda _: "", output_func=outputs.append)

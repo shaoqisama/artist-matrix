@@ -29,6 +29,13 @@ class ArtistMatrixSettings(BaseSettings):
     avatar_model: str = Field(default="sdxl-stub")
     avatar_api_key: str | None = Field(default=None)
     prompts_root: Path = Field(default=_PROJECT_ROOT / "prompts")
+    creation_audio_provider: str = Field(default="stub")
+    creation_audio_model: str = Field(default="V3_5")
+    creation_audio_api_key: str | None = Field(default=None)
+    creation_audio_base_url: str | None = Field(default="https://api.sunoapi.org")
+    creation_audio_callback_url: str | None = Field(default=None)
+    creation_audio_poll_interval: float = Field(default=5.0)
+    creation_audio_timeout_seconds: float = Field(default=300.0)
 
 
 __all__ = ["ArtistMatrixSettings"]

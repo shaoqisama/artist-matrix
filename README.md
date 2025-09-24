@@ -7,7 +7,7 @@ Artist Matrix is a terminal-forward agent framework for crafting AI-first music 
 2. Activate the environment (`source .venv/bin/activate`) or prefix commands with `uv run`.
 3. Run quality checks via `uv run make verify` before opening pull requests.
 4. Launch the retro TUI prototype: `uv run python -m artist_matrix.tui`.
-5. Optional: set `ARTIST_MATRIX_PERSONA_PROVIDER`, `ARTIST_MATRIX_PERSONA_MODEL`, `ARTIST_MATRIX_PERSONA_API_KEY`, `ARTIST_MATRIX_AVATAR_PROVIDER`, and `ARTIST_MATRIX_AVATAR_MODEL` / `ARTIST_MATRIX_AVATAR_API_KEY` to swap in custom LLM or diffusion connectors (default `stub`).
+5. Optional: set `ARTIST_MATRIX_PERSONA_PROVIDER`, `ARTIST_MATRIX_PERSONA_MODEL`, `ARTIST_MATRIX_PERSONA_API_KEY`, `ARTIST_MATRIX_AVATAR_PROVIDER`, `ARTIST_MATRIX_AVATAR_MODEL` / `ARTIST_MATRIX_AVATAR_API_KEY`, and the audio knobs (`ARTIST_MATRIX_CREATION_AUDIO_PROVIDER`, `ARTIST_MATRIX_CREATION_AUDIO_MODEL`, `ARTIST_MATRIX_CREATION_AUDIO_API_KEY`, `ARTIST_MATRIX_CREATION_AUDIO_BASE_URL`, `ARTIST_MATRIX_CREATION_AUDIO_CALLBACK_URL`) to swap in custom LLM, diffusion, or audio connectors (default `stub`).
 
 ## Project Layout
 - `src/artist_matrix/`: Core packages for each agent node and shared state.
@@ -31,6 +31,7 @@ Current implementation includes:
 - DeepSeek integration reads prompt templates from `prompts/persona/` and calls the configured API endpoint when the provider and key are set.
 - Optional logging: set `ARTIST_MATRIX_PERSONA_LOG_DIR` to capture DeepSeek request/response JSON artifacts for debugging.
 - New TUI options let you jump straight into Creation Engine or Echo Chamber with pre-filled briefs and campaign beats after forging/selecting a persona.
+- Creation Engine now invokes provider-backed audio (`stub` or `suno`) directly from the TUI, persisting track manifests and surfacing artifact paths on completion.
 - Track production with lyric/audio/artwork orchestration (Creation Engine).
 - Social amplification planning and analytics stubs (Echo Chamber).
 - Distribution pipeline integration and release manifests (World Stage).

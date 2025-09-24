@@ -16,8 +16,15 @@ from artist_matrix.soul_forge import (
     build_avatar_generator,
     build_persona_generator,
 )
-from artist_matrix.creation_engine import CreationBrief
+from artist_matrix.creation_engine import (
+    CreationBrief,
+    CreationEngineService,
+    TrackManifestRepository,
+    build_audio_generator,
+    build_lyric_generator,
+)
 from artist_matrix.creation_engine.service import ArtworkJobSpec, TrackJobSpec
+from artist_matrix.interfaces.production import LyricDraft, TrackArtifact
 from artist_matrix.echo_chamber import SocialCampaign
 from artist_matrix.state import ArtistMatrixSettings
 from pydantic import ValidationError
@@ -53,6 +60,7 @@ class SessionState:
     last_profile: ArtistProfile | None = None
     last_manifest_path: Path | None = None
     last_avatar: AvatarBlueprint | None = None
+    last_track_manifest: Path | None = None
     draft: PersonaWizardDraft = field(default_factory=PersonaWizardDraft)
     track_brief: CreationBrief | None = None
     campaign_plan: SocialCampaign | None = None
@@ -89,6 +97,17 @@ def _build_default_soul_forge(settings: ArtistMatrixSettings) -> SoulForgeServic
     )
 
 
+def _build_default_creation_engine(settings: ArtistMatrixSettings) -> CreationEngineService:
+    lyric_gen = build_lyric_generator(settings)
+    audio_gen = build_audio_generator(settings)
+    repository = TrackManifestRepository(base_path=settings.data_root / "artists")
+    return CreationEngineService(
+        lyric_generator=lyric_gen,
+        audio_generator=audio_gen,
+        repository=repository,
+    )
+
+
 class TuiApp:
     """Interactive shell coordinating avatar selection and creation."""
 
@@ -99,6 +118,7 @@ class TuiApp:
         output_func: Callable[[str], None] | None = None,
         assets: TuiAssets | None = None,
         soul_forge_service: SoulForgeService | None = None,
+        creation_service: CreationEngineService | None = None,
         session: SessionState | None = None,
     ) -> None:
         self._input = input_func or input
@@ -106,6 +126,7 @@ class TuiApp:
         self.assets = assets or TuiAssets()
         self.settings = ArtistMatrixSettings()
         self.soul_forge = soul_forge_service or _build_default_soul_forge(self.settings)
+        self.creation_engine = creation_service or _build_default_creation_engine(self.settings)
         self.session = session or SessionState()
 
     def build_main_menu(self) -> str:
@@ -407,7 +428,8 @@ class TuiApp:
     def handle_creation_engine(self) -> None:
         self.output("\n>> Creation Engine // Suggested Brief")
         brief = self.session.track_brief
-        if not brief:
+        profile = self.session.last_profile
+        if not brief or profile is None:
             self.output(" No persona selected. Generate or select a profile first.")
             return
         track = brief.track
@@ -422,7 +444,64 @@ class TuiApp:
             self.output(f"  References : {', '.join(refs) if refs else '—'}")
         if brief.narrative:
             self.output(f" Campaign narrative: {brief.narrative}")
-        self.output(" Use this draft to seed Creation Engine workflows.")
+        provider = self.settings.creation_audio_provider
+        selection = self._input(
+            f"Generate track via provider '{provider}'? [y/N]: "
+        ).strip().lower()
+        if selection not in {"y", "yes"}:
+            self.output(" Creation cancelled; returning to main menu.")
+            return
+
+        self.output(f" Launching Creation Engine via provider '{provider}'...")
+        try:
+            result = self.creation_engine.produce_track(profile, brief)
+        except Exception as exc:  # noqa: BLE001
+            self.output(f"!! Creation Engine failure: {exc}")
+            if self.session.last_track_manifest:
+                self.output(
+                    f" Last successful track manifest: {self.session.last_track_manifest}"
+                )
+            return
+
+        manifest_path: Path | None = None
+        manifest_value = result.get("manifest_path") if isinstance(result, dict) else None
+        if isinstance(manifest_value, Path):
+            manifest_path = manifest_value
+        elif isinstance(manifest_value, str):
+            manifest_path = Path(manifest_value)
+        if manifest_path is not None:
+            self.session.last_track_manifest = manifest_path
+
+        track_artifact = result.get("track") if isinstance(result, dict) else None
+        if not isinstance(track_artifact, TrackArtifact):
+            track_artifact = None
+
+        lyrics = result.get("lyrics") if isinstance(result, dict) else None
+        if not isinstance(lyrics, LyricDraft):
+            lyrics = None
+
+        summary = [
+            "",
+            f"Creation Engine complete via provider '{provider}'.",
+        ]
+        if manifest_path is not None:
+            summary.append(f" → Manifest saved: {manifest_path}")
+        if track_artifact is not None:
+            summary.append(f" → Track asset : {track_artifact.audio_path}")
+            if track_artifact.duration_seconds:
+                summary.append(
+                    f"   duration   : {track_artifact.duration_seconds:.0f}s"
+                )
+        if lyrics is not None and lyrics.body:
+            first_line = lyrics.body.splitlines()[0]
+            snippet = first_line[:80]
+            if len(first_line) > 80:
+                snippet += "…"
+            summary.append(f" → Lyrics lead: {snippet}")
+        if provider == "stub":
+            summary.append(" (Stub provider wrote placeholder audio bytes.)")
+        self.output("\n".join(summary))
+        self._post_persona_prompt()
 
     def handle_echo_chamber(self) -> None:
         self.output("\n>> Echo Chamber // Campaign Plan")

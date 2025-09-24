@@ -80,3 +80,9 @@
 - [x] Offer immediate follow-up prompts after forging a persona to jump into the chosen workflow without returning to the main menu.
 - [x] Pre-populate brief/campaign templates with persona metadata (genre, mood, tags, safety notes) and persist breadcrumbs for automation.
 - [x] Expand integration tests to cover hand-offs and document the workflow in README/agents/workflows guides.
+
+## Milestone 14: Suno-Powered Track Production
+- [x] Implement `SunoAudioGenerator` adhering to `AudioGenerator`, handling job submission, polling, error retries, and asset downloads to `data/artists/<slug>/tracks/`.
+- [x] Extend settings/env support (`ArtistMatrixSettings`, `.env.example`) with `ARTIST_MATRIX_CREATION_AUDIO_PROVIDER=suno`, API key, and endpoint configuration.
+- [x] Wire the Creation Engine and TUI "Launch Creation" action to invoke Suno when provider is set, displaying progress/state changes in the shell.
+- [x] Backfill tests with Suno fixtures (recorded responses) and update `docs/agents/creation_engine.md` plus `README.md` quick-start notes for real audio generation.

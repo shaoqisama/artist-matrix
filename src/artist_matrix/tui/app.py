@@ -23,8 +23,10 @@ from artist_matrix.creation_engine import (
     CreationBrief,
     CreationEngineService,
     TrackIdeationDraft,
+    TrackIdeationLLM,
     TrackIdeationStore,
     TrackManifestRepository,
+    apply_llm_guidance,
     build_audio_generator,
     build_lyric_generator,
 )
@@ -137,7 +139,9 @@ class TuiApp:
         self.soul_forge = soul_forge_service or _build_default_soul_forge(self.settings)
         self.creation_engine = creation_service or _build_default_creation_engine(self.settings)
         self.ideation_store = TrackIdeationStore(self.settings)
+        self.ideation_llm = TrackIdeationLLM.build(self.settings)
         self.session = session or SessionState()
+        self.llm_client: TrackIdeationLLM | None = None
 
     def build_main_menu(self) -> str:
         palette = self.assets.palette()
@@ -653,12 +657,25 @@ class TuiApp:
             session_turns.append(ChatTurn(role="user", content=user_input))
             updated, draft = self._apply_draft_command(draft, user_input)
             self.session.track_draft = draft
+            persona_summary = self._persona_summary(profile)
+            llm_response = None
+            if not updated:
+                llm_response, draft = apply_llm_guidance(
+                    self.ideation_llm,
+                    persona_summary,
+                    user_input,
+                    transcript,
+                    draft,
+                )
+                self.session.track_draft = draft
             if updated:
                 response = f"Updated {updated}."
                 logger.debug(
                     "Track draft update",
                     extra={"persona": profile.slug, "field": updated},
                 )
+            elif llm_response:
+                response = llm_response
             else:
                 response = self._generate_stub_response(profile, draft, user_input)
             reply = ChatTurn(role="assistant", content=response)
@@ -786,6 +803,10 @@ class TuiApp:
             f"Channeling {profile.name}'s {profile.lyric_style}."
             " Keep refining or type 'done' to stage the render."
         )
+
+    def _persona_summary(self, profile: ArtistProfile) -> str:
+        influences = ", ".join(profile.influences) or "ambient inspirations"
+        return f"{profile.name} ({profile.lyric_style}) influenced by {influences}"
 
     def _draft_summary_lines(self, draft: TrackIdeationDraft) -> Iterable[str]:
         fields = [

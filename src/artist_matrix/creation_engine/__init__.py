@@ -8,6 +8,7 @@ from .connectors import (
     build_lyric_generator,
 )
 from .ideation import ChatTurn, TrackIdeationDraft, TrackIdeationStore
+from .llm import TrackIdeationLLM, apply_llm_guidance
 from .service import CreationBrief, CreationEngineService, TrackManifestRepository
 
 __all__ = [
@@ -22,4 +23,6 @@ __all__ = [
     "ChatTurn",
     "TrackIdeationDraft",
     "TrackIdeationStore",
+    "TrackIdeationLLM",
+    "apply_llm_guidance",
 ]

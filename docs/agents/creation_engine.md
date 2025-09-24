@@ -10,6 +10,7 @@
 - `src/artist_matrix/creation_engine/service.py`: Orchestrates lyric/audio/artwork jobs and manifest writes.
 - `src/artist_matrix/creation_engine/connectors.py`: Stub + Suno audio generators, heuristic lyric generator, and factory helpers.
 - `src/artist_matrix/creation_engine/ideation.py`: Track ideation drafts, transcripts, and persistence utilities.
+- `src/artist_matrix/creation_engine/llm.py`: Optional DeepSeek-powered ideation chat client and helpers.
 - `src/artist_matrix/interfaces/production.py`: Protocol definitions for lyric, audio, and artwork generators.
 - `src/artist_matrix/state/jobs.py`: Dataclasses describing track and artwork job specs.
 
@@ -24,10 +25,11 @@
   - `ARTIST_MATRIX_CREATION_AUDIO_LOG_DIR` (write request/response telemetry here)
   - `ARTIST_MATRIX_CREATION_AUDIO_POLL_INTERVAL`, `ARTIST_MATRIX_CREATION_AUDIO_TIMEOUT_SECONDS`
 - Use `ARTIST_MATRIX_DATA_ROOT` to relocate manifest and artifact directories when deploying to cloud storage.
+- To enable the ideation LLM, set `ARTIST_MATRIX_PERSONA_PROVIDER=deepseek`, supply `ARTIST_MATRIX_PERSONA_API_KEY`, and optionally `ARTIST_MATRIX_PERSONA_LOG_DIR` for request/response capture.
 
 ## Testing
 - Unit tests: `tests/creation_engine/test_service.py` verifies artifact metadata and manifest content.
 - Suno connector: `tests/creation_engine/test_suno_generator.py` uses `httpx.MockTransport` to record/poll/download behaviour.
-- Ideation store: `tests/creation_engine/test_ideation.py` exercises draft/transcript round-trips.
+- Ideation store + LLM helper: `tests/creation_engine/test_ideation.py` exercises draft/transcript round-trips and the guidance adapter.
 - TUI integration: `tests/tui/test_creation_flow.py` covers the end-user launch path.
 - Add golden samples in `tests/creation_engine/fixtures/` when extending to new render modes or queue backends.

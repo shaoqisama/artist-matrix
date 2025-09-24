@@ -95,6 +95,6 @@
 
 ## Milestone 16: Persona-Aware Track Ideation
 - [x] Add a `TrackIdeationDraft` schema and persist iterative briefs to `SessionState` plus disk for reuse.
-- [ ] Extend the TUI Creation menu with a chat-driven “Discuss track concept” flow that collaborates with an LLM (DeepSeek) seeded by the selected persona.
-- [ ] Convert the approved draft into Suno-ready payload fields (title/style/instrumental/custom mode, tags, lyrics) before submission and allow manual edits.
-- [ ] Persist transcripts + final briefs, update documentation (`docs/agents/creation_engine.md`, `README.md`) and add tests covering chat, draft save/load, and Suno hand-off using the curated prompt.
+- [x] Extend the TUI Creation menu with a chat-driven “Discuss track concept” flow that collaborates with an LLM (DeepSeek) seeded by the selected persona.
+- [x] Convert the approved draft into Suno-ready payload fields (title/style/instrumental/custom mode, tags, lyrics) before submission and allow manual edits.
+- [x] Persist transcripts + final briefs, update documentation (`docs/agents/creation_engine.md`, `README.md`) and add tests covering chat, draft save/load, and Suno hand-off using the curated prompt.

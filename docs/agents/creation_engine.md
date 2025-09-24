@@ -9,6 +9,7 @@
 ## Key Modules
 - `src/artist_matrix/creation_engine/service.py`: Orchestrates lyric/audio/artwork jobs and manifest writes.
 - `src/artist_matrix/creation_engine/connectors.py`: Stub + Suno audio generators, heuristic lyric generator, and factory helpers.
+- `src/artist_matrix/creation_engine/ideation.py`: Track ideation drafts, transcripts, and persistence utilities.
 - `src/artist_matrix/interfaces/production.py`: Protocol definitions for lyric, audio, and artwork generators.
 - `src/artist_matrix/state/jobs.py`: Dataclasses describing track and artwork job specs.
 
@@ -27,5 +28,6 @@
 ## Testing
 - Unit tests: `tests/creation_engine/test_service.py` verifies artifact metadata and manifest content.
 - Suno connector: `tests/creation_engine/test_suno_generator.py` uses `httpx.MockTransport` to record/poll/download behaviour.
+- Ideation store: `tests/creation_engine/test_ideation.py` exercises draft/transcript round-trips.
 - TUI integration: `tests/tui/test_creation_flow.py` covers the end-user launch path.
 - Add golden samples in `tests/creation_engine/fixtures/` when extending to new render modes or queue backends.

@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict
+from typing import Callable, Dict, Iterable
+
+import logging
 
 from artist_matrix.interfaces.creative import AvatarBlueprint
 from artist_matrix.soul_forge import (
@@ -17,8 +19,11 @@ from artist_matrix.soul_forge import (
     build_persona_generator,
 )
 from artist_matrix.creation_engine import (
+    ChatTurn,
     CreationBrief,
     CreationEngineService,
+    TrackIdeationDraft,
+    TrackIdeationStore,
     TrackManifestRepository,
     build_audio_generator,
     build_lyric_generator,
@@ -31,6 +36,8 @@ from pydantic import ValidationError
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _ASSET_DIR = _PROJECT_ROOT / "assets" / "tui"
+
+logger = logging.getLogger(__name__)
 
 
 def _to_sequence(raw: str) -> tuple[str, ...]:
@@ -64,6 +71,8 @@ class SessionState:
     draft: PersonaWizardDraft = field(default_factory=PersonaWizardDraft)
     track_brief: CreationBrief | None = None
     campaign_plan: SocialCampaign | None = None
+    track_draft: TrackIdeationDraft | None = None
+    transcript: list[ChatTurn] = field(default_factory=list)
 
 
 @dataclass
@@ -127,6 +136,7 @@ class TuiApp:
         self.settings = ArtistMatrixSettings()
         self.soul_forge = soul_forge_service or _build_default_soul_forge(self.settings)
         self.creation_engine = creation_service or _build_default_creation_engine(self.settings)
+        self.ideation_store = TrackIdeationStore(self.settings)
         self.session = session or SessionState()
 
     def build_main_menu(self) -> str:
@@ -141,10 +151,10 @@ class TuiApp:
             "// Frequency Map",
             palette_line,
             "",
-            " [1] Generate Avatar    -> Soul Forge",
-            " [2] Select Avatar      -> Archives",
-            " [3] Launch Creation    -> Track Forge",
-            " [4] Launch Echo Chamber-> Broadcast",
+            " [1] Generate Avatar      -> Soul Forge",
+            " [2] Select Avatar        -> Archives",
+            " [3] Creation Workbench   -> Track Forge",
+            " [4] Launch Echo Chamber  -> Broadcast",
             " [Q] Quit Terminal      -> Sleep Cycle",
             "",
         ]
@@ -159,7 +169,7 @@ class TuiApp:
             elif choice in {"2", "s", "select"}:
                 self.handle_select()
             elif choice in {"3", "c", "creation"}:
-                self.handle_creation_engine()
+                self.handle_creation_menu()
             elif choice in {"4", "e", "echo"}:
                 self.handle_echo_chamber()
             elif choice in {"q", "quit", "exit"}:
@@ -207,6 +217,19 @@ class TuiApp:
         if isinstance(profile, ArtistProfile):
             self.session.last_profile = profile
             self._update_suggestions(profile, draft)
+            default_draft = TrackIdeationDraft(
+                persona_slug=profile.slug,
+                title=f"{profile.name} Anthem",
+                style=draft.mood or profile.visual_style,
+                references=self.session.track_brief.track.references if self.session.track_brief else (),
+                model=self.settings.creation_audio_model,
+            )
+            self.session.track_draft = default_draft
+            self.session.transcript = []
+            try:
+                self.ideation_store.save_draft(default_draft)
+            except Exception as exc:  # noqa: BLE001
+                self.output(f" Warning: unable to persist initial track draft ({exc}).")
         self.session.last_manifest_path = manifest_path
         if isinstance(avatar, AvatarBlueprint):
             self.session.last_avatar = avatar
@@ -353,6 +376,10 @@ class TuiApp:
             refinement_instructions=tuple(self._as_str_list(manifest.get("refinement_instructions", []))),
         )
         self._update_suggestions(profile, self.session.draft)
+        stored_draft = self.ideation_store.load_draft(profile.slug)
+        if stored_draft:
+            self.session.track_draft = stored_draft
+        self.session.transcript = self.ideation_store.load_transcript(profile.slug)
         self.output(
             " Use menu option 3 or 4 to launch Creation Engine or Echo Chamber with this persona."
         )
@@ -432,11 +459,37 @@ class TuiApp:
         if not brief or profile is None:
             self.output(" No persona selected. Generate or select a profile first.")
             return
+        draft = self.session.track_draft
+        if draft is not None:
+            if not brief.track.references and draft.references:
+                brief = CreationBrief(
+                    track=TrackJobSpec(
+                        title=draft.title or brief.track.title,
+                        mood=draft.style or brief.track.mood,
+                        tempo_bpm=brief.track.tempo_bpm,
+                        key=brief.track.key,
+                        references=tuple(draft.references),
+                        narrative=brief.track.narrative,
+                    ),
+                    artwork=brief.artwork,
+                    narrative=brief.narrative,
+                )
+                self.session.track_brief = brief
         track = brief.track
         self.output(f" Title       : {track.title}")
         self.output(f" Mood        : {track.mood}")
         self.output(f" References  : {', '.join(track.references) if track.references else '—'}")
         self.output(f" Narrative   : {track.narrative or '—'}")
+        if draft is not None:
+            self.output(" Draft summary")
+            self.output(f"  Prompt      : {draft.prompt or '—'}")
+            self.output(f"  Style       : {draft.style or '—'}")
+            tags = ", ".join(draft.tags) if draft.tags else "—"
+            self.output(f"  Tags        : {tags}")
+            self.output(f"  Instrumental: {'yes' if draft.instrumental else 'no'}")
+            if draft.lyrics:
+                snippet = draft.lyrics.splitlines()[0][:80]
+                self.output(f"  Lyrics seed : {snippet}{'…' if len(draft.lyrics) > 80 else ''}")
         if brief.artwork:
             self.output(" Artwork")
             self.output(f"  Style      : {brief.artwork.style}")
@@ -500,6 +553,12 @@ class TuiApp:
                 summary.append(
                     f"   duration   : {track_artifact.duration_seconds:.0f}s"
                 )
+            if track_artifact.alternates:
+                summary.append("   alternates :")
+                for path in track_artifact.alternates[:3]:
+                    summary.append(f"    - {path}")
+                if len(track_artifact.alternates) > 3:
+                    summary.append("    - …")
         if lyrics is not None and lyrics.body:
             first_line = lyrics.body.splitlines()[0]
             snippet = first_line[:80]
@@ -519,6 +578,259 @@ class TuiApp:
             summary.append(f" Log files saved to: {log_dir}")
         self.output("\n".join(summary))
         self._post_persona_prompt()
+
+    def handle_creation_menu(self) -> None:
+        options = {
+            "1": ("Discuss track concept", self.handle_creation_chat),
+            "2": ("Review draft", self.handle_creation_draft_review),
+            "3": ("Render with Suno", self.handle_creation_engine),
+            "b": ("Back to main menu", None),
+        }
+        while True:
+            self.output("\n>> Creation Workbench")
+            for key, (label, _) in options.items():
+                if key == "b":
+                    self.output(f" [{key.upper()}] {label}")
+                else:
+                    self.output(f" [{key}] {label}")
+            selection = self._input("Select action: ").strip().lower()
+            if selection in {"b", "back", "exit", ""}:
+                return
+            entry = options.get(selection)
+            if not entry:
+                self.output("  Invalid selection.")
+                continue
+            _, handler = entry
+            if handler is None:
+                return
+            handler()
+
+    def _ensure_track_draft(self, profile: ArtistProfile) -> TrackIdeationDraft:
+        draft = self.session.track_draft
+        if draft is None or draft.persona_slug != profile.slug:
+            draft = TrackIdeationDraft(
+                persona_slug=profile.slug,
+                title=f"{profile.name} Anthem",
+                style=profile.lyric_style,
+                references=profile.influences,
+                model=self.settings.creation_audio_model,
+            )
+            self.session.track_draft = draft
+        return draft
+
+    def handle_creation_chat(self) -> None:
+        profile = self.session.last_profile
+        if profile is None:
+            self.output(" No persona selected. Generate or select a profile first.")
+            return
+        draft = self._ensure_track_draft(profile)
+        transcript = list(self.session.transcript)
+        self.output("\n>> Creation Ideation // Chat Assistant")
+        self.output(
+            " Enter commands like 'title: Signal Burn' or 'tags: neon, cyberpunk'."
+        )
+        self.output(" Type 'done' when satisfied or 'help' to list fields.")
+        session_turns: list[ChatTurn] = []
+        while True:
+            user_input = self._input("You> ").strip()
+            if not user_input:
+                continue
+            lowered = user_input.lower()
+            if lowered in {"quit", "cancel"}:
+                self.output(" Chat cancelled; no changes committed.")
+                return
+            if lowered in {"done", "finish", "d"}:
+                break
+            if lowered == "help":
+                self.output(
+                    " Fields: title, prompt, style, tags, references, negative, instrumental,"
+                    " model, lyrics, vocal, notes, style_weight, weirdness, audio_weight."
+                    " Any other text is saved as a note."
+                )
+                continue
+
+            transcript.append(ChatTurn(role="user", content=user_input))
+            session_turns.append(ChatTurn(role="user", content=user_input))
+            updated, draft = self._apply_draft_command(draft, user_input)
+            self.session.track_draft = draft
+            if updated:
+                response = f"Updated {updated}."
+                logger.debug(
+                    "Track draft update",
+                    extra={"persona": profile.slug, "field": updated},
+                )
+            else:
+                response = self._generate_stub_response(profile, draft, user_input)
+            reply = ChatTurn(role="assistant", content=response)
+            transcript.append(reply)
+            session_turns.append(reply)
+            self.output(f"AI> {response}")
+
+        self.session.transcript = transcript
+        try:
+            self.ideation_store.save_draft(draft)
+            self.ideation_store.append_transcript(profile.slug, session_turns)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Failed to persist track ideation data",
+                extra={"persona": profile.slug, "error": str(exc)},
+            )
+        self._sync_brief_with_draft(draft)
+        self.output(" Draft saved. Use 'Review draft' to tweak fields or 'Render with Suno'.")
+
+    def handle_creation_draft_review(self) -> None:
+        profile = self.session.last_profile
+        if profile is None:
+            self.output(" No persona selected. Generate or select a profile first.")
+            return
+        draft = self._ensure_track_draft(profile)
+        while True:
+            self.output("\n:: Track Draft Summary ::")
+            for line in self._draft_summary_lines(draft):
+                self.output(f" {line}")
+            self.output(
+                " Commands -> 'field: value' to edit, 'sync' to update brief, 'save',"
+                " 'reset', or 'back' to exit."
+            )
+            choice = self._input("draft> ").strip()
+            if not choice:
+                continue
+            lowered = choice.lower()
+            if lowered in {"back", "b", "exit"}:
+                return
+            if lowered in {"reset", "r"}:
+                draft = TrackIdeationDraft(persona_slug=profile.slug)
+                self.session.track_draft = draft
+                self.output(" Draft reset.")
+                continue
+            if lowered in {"save", "s"}:
+                try:
+                    self.ideation_store.save_draft(draft)
+                    self.output(" Draft persisted to disk.")
+                except Exception as exc:  # noqa: BLE001
+                    self.output(f" Failed to save draft: {exc}")
+                continue
+            if lowered in {"sync", "update"}:
+                self._sync_brief_with_draft(draft)
+                self.output(" Creation brief updated from draft.")
+                continue
+            updated, draft = self._apply_draft_command(draft, choice)
+            self.session.track_draft = draft
+            if updated:
+                self.output(f" Updated {updated}.")
+            else:
+                self.output(" Unrecognised command; use 'field: value'.")
+
+    def _apply_draft_command(
+        self,
+        draft: TrackIdeationDraft,
+        command: str,
+    ) -> tuple[str | None, TrackIdeationDraft]:
+        if ":" not in command:
+            notes = list(draft.notes)
+            notes.append(command)
+            new_draft = draft.model_copy(update={"notes": tuple(notes)})
+            new_draft.update_timestamp()
+            return "notes", new_draft
+        key, raw_value = command.split(":", 1)
+        key = key.strip().lower()
+        value = raw_value.strip()
+        updates: dict[str, object] | None = None
+        if key in {"title", "prompt", "style", "model", "lyrics"}:
+            updates = {key: value or None}
+        elif key in {"tags", "references", "negative", "notes"}:
+            items = tuple(part.strip() for part in value.split(",") if part.strip())
+            field_map = {
+                "tags": "tags",
+                "references": "references",
+                "negative": "negative_tags",
+                "notes": "notes",
+            }
+            updates = {field_map[key]: items}
+        elif key in {"instrumental", "custom", "custommode"}:
+            truthy = value.lower() in {"yes", "y", "true", "1"}
+            field = "instrumental" if key == "instrumental" else "custom_mode"
+            updates = {field: truthy}
+        elif key in {"vocal", "vocal_gender"}:
+            updates = {"vocal_gender": value or None}
+        elif key in {"style_weight", "weirdness", "weirdness_constraint", "audio_weight"}:
+            try:
+                number = float(value)
+            except ValueError:
+                return None, draft
+            field_map = {
+                "style_weight": "style_weight",
+                "weirdness": "weirdness_constraint",
+                "weirdness_constraint": "weirdness_constraint",
+                "audio_weight": "audio_weight",
+            }
+            updates = {field_map[key]: number}
+        else:
+            return None, draft
+        new_draft = draft.model_copy(update=updates)
+        new_draft.update_timestamp()
+        return key, new_draft
+
+    def _generate_stub_response(
+        self,
+        profile: ArtistProfile,
+        draft: TrackIdeationDraft,
+        user_input: str,
+    ) -> str:
+        if "tags" in user_input.lower():
+            focus = ", ".join(draft.tags) or "fresh references"
+            return f"Locked in tags—{focus} will drive the vibe."
+        if "instrumental" in user_input.lower():
+            return "Instrumental preference captured. We'll tailor the arrangement accordingly."
+        return (
+            f"Channeling {profile.name}'s {profile.lyric_style}."
+            " Keep refining or type 'done' to stage the render."
+        )
+
+    def _draft_summary_lines(self, draft: TrackIdeationDraft) -> Iterable[str]:
+        fields = [
+            ("Title", draft.title or "—"),
+            (
+                "Prompt",
+                (draft.prompt or "—")[:80]
+                + ("…" if draft.prompt and len(draft.prompt) > 80 else ""),
+            ),
+            ("Style", draft.style or "—"),
+            ("Tags", ", ".join(draft.tags) or "—"),
+            ("Negative", ", ".join(draft.negative_tags) or "—"),
+            ("References", ", ".join(draft.references) or "—"),
+            ("Instrumental", "yes" if draft.instrumental else "no"),
+            (
+                "Lyrics",
+                (draft.lyrics or "—")[:80]
+                + ("…" if draft.lyrics and len(draft.lyrics) > 80 else ""),
+            ),
+            ("Model", draft.model or "—"),
+            ("Updated", draft.updated_at.isoformat(timespec="seconds")),
+        ]
+        for label, value in fields:
+            yield f"{label:12}: {value}"
+
+    def _sync_brief_with_draft(self, draft: TrackIdeationDraft) -> None:
+        brief = self.session.track_brief
+        if not brief:
+            return
+        references = draft.references or brief.track.references
+        narrative = draft.prompt or brief.track.narrative
+        updated_track = TrackJobSpec(
+            title=draft.title or brief.track.title,
+            mood=draft.style or brief.track.mood,
+            tempo_bpm=brief.track.tempo_bpm,
+            key=brief.track.key,
+            references=tuple(references),
+            narrative=narrative,
+        )
+        self.session.track_brief = CreationBrief(
+            track=updated_track,
+            artwork=brief.artwork,
+            narrative=draft.notes[0] if draft.notes else brief.narrative,
+        )
+
 
     def handle_echo_chamber(self) -> None:
         self.output("\n>> Echo Chamber // Campaign Plan")

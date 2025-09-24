@@ -7,6 +7,7 @@ from .connectors import (
     build_audio_generator,
     build_lyric_generator,
 )
+from .ideation import ChatTurn, TrackIdeationDraft, TrackIdeationStore
 from .service import CreationBrief, CreationEngineService, TrackManifestRepository
 
 __all__ = [
@@ -18,4 +19,7 @@ __all__ = [
     "SunoAudioGenerator",
     "build_audio_generator",
     "build_lyric_generator",
+    "ChatTurn",
+    "TrackIdeationDraft",
+    "TrackIdeationStore",
 ]

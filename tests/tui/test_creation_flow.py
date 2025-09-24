@@ -82,3 +82,45 @@ def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> 
     assert str(manifest_path) in joined_output
     assert str(audio_path) in joined_output
     assert "Logs captured" in joined_output
+
+
+def test_creation_chat_updates_draft(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(tmp_path))
+    monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
+    profile = ArtistProfile(
+        name="Neon Wasteland",
+        persona_tags=("cyberpunk",),
+        lyric_style="synth metal narration",
+        visual_style="retro neon",
+        influences=("Perturbator",),
+    )
+    brief = CreationBrief(track=TrackJobSpec(title="Signal Burn", mood="fierce"))
+
+    inputs: Iterator[str] = iter(
+        [
+            "title: Neon Signal",
+            "tags: neon, synth",
+            "instrumental: yes",
+            "done",
+        ]
+    )
+    outputs: list[str] = []
+
+    session = SessionState(last_profile=profile, track_brief=brief)
+    app = TuiApp(
+        input_func=lambda _: next(inputs),
+        output_func=outputs.append,
+        session=session,
+    )
+
+    app.handle_creation_chat()
+
+    draft = session.track_draft
+    assert draft is not None
+    assert draft.title == "Neon Signal"
+    assert draft.tags == ("neon", "synth")
+    assert draft.instrumental is True
+    # ensure persisted
+    stored = app.ideation_store.load_draft(profile.slug)
+    assert stored is not None
+    assert stored.title == "Neon Signal"

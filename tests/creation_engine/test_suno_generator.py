@@ -78,7 +78,13 @@ def test_suno_audio_generator_downloads_audio(
                                     "audioUrl": "https://cdn.suno.fake/audio/job-123.mp3",
                                     "streamAudioUrl": "https://cdn.suno.fake/audio/job-123-stream",
                                     "duration": 123.0,
-                                }
+                                },
+                                {
+                                    "id": "result-2",
+                                    "audioUrl": "https://cdn.suno.fake/audio/job-123-alt.mp3",
+                                    "streamAudioUrl": "https://cdn.suno.fake/audio/job-123-alt-stream",
+                                    "duration": 222.0,
+                                },
                             ]
                         },
                     },
@@ -90,6 +96,12 @@ def test_suno_audio_generator_downloads_audio(
 
         if request.method == "GET" and request.url.path == "/audio/job-123-stream":
             return Response(200, content=b"AUDIO", headers={"Content-Type": "audio/mpeg"})
+
+        if request.method == "GET" and request.url.path == "/audio/job-123-alt.mp3":
+            return Response(200, content=b"ALT", headers={"Content-Type": "audio/mpeg"})
+
+        if request.method == "GET" and request.url.path == "/audio/job-123-alt-stream":
+            return Response(200, content=b"ALT", headers={"Content-Type": "audio/mpeg"})
 
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
@@ -120,6 +132,12 @@ def test_suno_audio_generator_downloads_audio(
     assert artifact.duration_seconds == pytest.approx(123.0)
     assert expected_path.exists()
     assert expected_path.read_bytes() == b"AUDIO"
+
+    alternates = artifact.alternates
+    assert alternates
+    alt_path = alternates[0]
+    assert alt_path.exists()
+    assert alt_path.read_bytes() == b"ALT"
 
     assert poll_attempts["count"] >= 2
 

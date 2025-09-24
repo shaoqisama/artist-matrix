@@ -162,10 +162,30 @@ class SunoAudioGenerator(AudioGenerator):
                 if self.log_dir is not None
                 else None,
             )
-            result_payload = self._select_primary_result(job_payload)
-            audio_url = self._extract_audio_url(result_payload)
-            duration = self._extract_duration(result_payload)
-            self._download_audio(client, audio_url, output_path)
+            results = self._collect_results(job_payload)
+            if not results:
+                raise RuntimeError("Suno generation returned no audio results")
+
+            alternate_paths: list[Path] = []
+            primary_duration: float | None = None
+            primary_preview: str | None = None
+
+            for index, result_payload in enumerate(results):
+                target_path = (
+                    output_path
+                    if index == 0
+                    else output_path.with_name(
+                        f"{output_path.stem}-{index+1}{output_path.suffix}"
+                    )
+                )
+                audio_url = self._extract_audio_url(result_payload)
+                duration = self._extract_duration(result_payload)
+                self._download_audio(client, audio_url, target_path)
+                if index == 0:
+                    primary_duration = duration
+                    primary_preview = self._extract_preview_url(result_payload)
+                else:
+                    alternate_paths.append(target_path)
 
         logger.info(
             "Suno generation completed",
@@ -173,13 +193,12 @@ class SunoAudioGenerator(AudioGenerator):
                 "artist": profile.slug,
                 "track_title": spec.title,
                 "job_id": job_id,
-                "duration": duration,
+                "duration": primary_duration,
+                "alternates": len(alternate_paths),
             },
         )
 
-        preview_url = result_payload.get("streamAudioUrl")
-        if not isinstance(preview_url, str):
-            preview_url = None
+        preview_url = primary_preview if isinstance(primary_preview, str) else None
 
         if self.log_dir is not None:
             self._write_log(profile.slug, job_id, "completion", job_payload)
@@ -187,8 +206,9 @@ class SunoAudioGenerator(AudioGenerator):
         return TrackArtifact(
             title=spec.title,
             audio_path=output_path,
-            duration_seconds=duration,
+            duration_seconds=primary_duration,
             preview_url=preview_url,
+            alternates=tuple(alternate_paths),
         )
 
     # --- Internals -------------------------------------------------
@@ -280,15 +300,15 @@ class SunoAudioGenerator(AudioGenerator):
             payload["audioWeight"] = 0.65
         return payload
 
-    def _select_primary_result(self, payload: dict[str, object]) -> dict[str, object]:
+    def _collect_results(self, payload: dict[str, object]) -> list[dict[str, object]]:
         response = payload.get("response")
         if isinstance(response, dict):
             suno_data = response.get("sunoData")
-            if isinstance(suno_data, list) and suno_data:
-                first = suno_data[0]
-                if isinstance(first, dict):
-                    return first
-        return payload
+            if isinstance(suno_data, list):
+                return [item for item in suno_data if isinstance(item, dict)]
+        if isinstance(payload, dict):
+            return [payload]
+        return []
 
     def _extract_audio_url(self, payload: dict[str, object]) -> str:
         audio_url = payload.get("audioUrl") or payload.get("audio_url")
@@ -298,6 +318,12 @@ class SunoAudioGenerator(AudioGenerator):
         if stream_url:
             return str(stream_url)
         raise RuntimeError("Suno payload missing audio URL")
+
+    def _extract_preview_url(self, payload: dict[str, object]) -> str | None:
+        preview = payload.get("streamAudioUrl") or payload.get("stream_audio_url")
+        if isinstance(preview, str):
+            return preview
+        return None
 
     def _extract_duration(self, payload: dict[str, object]) -> float | None:
         duration = payload.get("duration")

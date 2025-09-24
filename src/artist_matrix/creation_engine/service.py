@@ -52,15 +52,16 @@ class TrackManifestRepository:
         artist_root.mkdir(parents=True, exist_ok=True)
         track_slug = track.title.lower().replace(" ", "-")
         manifest_path = artist_root / f"{track_slug}.json"
+        track_section: MutableMapping[str, object] = {
+            "audio_path": str(track.audio_path),
+            "duration_seconds": track.duration_seconds,
+            "preview_url": track.preview_url,
+        }
         manifest: MutableMapping[str, object] = {
             "artist": profile.slug,
             "title": track.title,
             "created_at": created_at.isoformat(),
-            "track": {
-                "audio_path": str(track.audio_path),
-                "duration_seconds": track.duration_seconds,
-                "preview_url": track.preview_url,
-            },
+            "track": track_section,
             "lyrics": {
                 "title": lyrics.title,
                 "body": lyrics.body,
@@ -74,6 +75,8 @@ class TrackManifestRepository:
                 "narrative": brief.track.narrative,
             },
         }
+        if track.alternates:
+            track_section["alternates"] = [str(path) for path in track.alternates]
         if brief.narrative:
             manifest["narrative"] = brief.narrative
         if artwork:

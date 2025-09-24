@@ -27,6 +27,7 @@ class TrackArtifact:
     audio_path: Path
     duration_seconds: float | None = None
     preview_url: str | None = None
+    alternates: Sequence[Path] = ()
 
 
 @dataclass(frozen=True)

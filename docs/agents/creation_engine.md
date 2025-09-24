@@ -4,6 +4,7 @@
 - Generate lyrics, render audio, and produce cover art for tracks.
 - Maintain per-track manifests in `data/artists/<slug>/tracks/` with job metadata.
 - Surface `TrackManifest` payloads to the workflow graph for downstream release preparation.
+- When a provider returns multiple takes (e.g., Suno dual outputs), download each variant and record alternate audio paths in the manifest.
 
 ## Key Modules
 - `src/artist_matrix/creation_engine/service.py`: Orchestrates lyric/audio/artwork jobs and manifest writes.

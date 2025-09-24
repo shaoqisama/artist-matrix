@@ -32,6 +32,7 @@ Current implementation includes:
 - Optional logging: set `ARTIST_MATRIX_PERSONA_LOG_DIR` to capture DeepSeek request/response JSON artifacts for debugging.
 - New TUI options let you jump straight into Creation Engine or Echo Chamber with pre-filled briefs and campaign beats after forging/selecting a persona.
 - Creation Engine now invokes provider-backed audio (`stub` or `suno`) directly from the TUI, persisting track manifests and surfacing artifact paths on completion.
+- Suno integration downloads every returned take, saving alternates alongside the primary track and noting them in the manifest/log summary.
 - Track production with lyric/audio/artwork orchestration (Creation Engine).
 - Social amplification planning and analytics stubs (Echo Chamber).
 - Distribution pipeline integration and release manifests (World Stage).

@@ -19,6 +19,7 @@
   - `ARTIST_MATRIX_CREATION_AUDIO_API_KEY`
   - `ARTIST_MATRIX_CREATION_AUDIO_BASE_URL` (defaults to `https://api.sunoapi.org`)
   - `ARTIST_MATRIX_CREATION_AUDIO_CALLBACK_URL` (required by Suno for async completion notices)
+  - `ARTIST_MATRIX_CREATION_AUDIO_LOG_DIR` (write request/response telemetry here)
   - `ARTIST_MATRIX_CREATION_AUDIO_POLL_INTERVAL`, `ARTIST_MATRIX_CREATION_AUDIO_TIMEOUT_SECONDS`
 - Use `ARTIST_MATRIX_DATA_ROOT` to relocate manifest and artifact directories when deploying to cloud storage.
 

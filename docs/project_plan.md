@@ -86,3 +86,9 @@
 - [x] Extend settings/env support (`ArtistMatrixSettings`, `.env.example`) with `ARTIST_MATRIX_CREATION_AUDIO_PROVIDER=suno`, API key, and endpoint configuration.
 - [x] Wire the Creation Engine and TUI "Launch Creation" action to invoke Suno when provider is set, displaying progress/state changes in the shell.
 - [x] Backfill tests with Suno fixtures (recorded responses) and update `docs/agents/creation_engine.md` plus `README.md` quick-start notes for real audio generation.
+
+## Milestone 15: Creation Engine Telemetry & Logging
+- [x] Add structured logging to the Creation Engine, capturing request/response metadata (submission payload, polling snapshots, completion summary) without leaking secrets.
+- [x] Introduce `ARTIST_MATRIX_CREATION_AUDIO_LOG_DIR` (settings + `.env.example`) and persist Suno transcripts to rotating JSON/text files when configured.
+- [x] Surface log file hints in the TUI after track generation to guide debugging workflows.
+- [x] Extend connector/unit tests to assert log artefacts, and document the logging workflow in `docs/agents/creation_engine.md` / `README.md`.

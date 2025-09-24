@@ -7,7 +7,7 @@ Artist Matrix is a terminal-forward agent framework for crafting AI-first music 
 2. Activate the environment (`source .venv/bin/activate`) or prefix commands with `uv run`.
 3. Run quality checks via `uv run make verify` before opening pull requests.
 4. Launch the retro TUI prototype: `uv run python -m artist_matrix.tui`.
-5. Optional: set `ARTIST_MATRIX_PERSONA_PROVIDER`, `ARTIST_MATRIX_PERSONA_MODEL`, `ARTIST_MATRIX_PERSONA_API_KEY`, `ARTIST_MATRIX_AVATAR_PROVIDER`, `ARTIST_MATRIX_AVATAR_MODEL` / `ARTIST_MATRIX_AVATAR_API_KEY`, and the audio knobs (`ARTIST_MATRIX_CREATION_AUDIO_PROVIDER`, `ARTIST_MATRIX_CREATION_AUDIO_MODEL`, `ARTIST_MATRIX_CREATION_AUDIO_API_KEY`, `ARTIST_MATRIX_CREATION_AUDIO_BASE_URL`, `ARTIST_MATRIX_CREATION_AUDIO_CALLBACK_URL`) to swap in custom LLM, diffusion, or audio connectors (default `stub`).
+5. Optional: set `ARTIST_MATRIX_PERSONA_PROVIDER`, `ARTIST_MATRIX_PERSONA_MODEL`, `ARTIST_MATRIX_PERSONA_API_KEY`, `ARTIST_MATRIX_AVATAR_PROVIDER`, `ARTIST_MATRIX_AVATAR_MODEL` / `ARTIST_MATRIX_AVATAR_API_KEY`, and the audio knobs (`ARTIST_MATRIX_CREATION_AUDIO_PROVIDER`, `ARTIST_MATRIX_CREATION_AUDIO_MODEL`, `ARTIST_MATRIX_CREATION_AUDIO_API_KEY`, `ARTIST_MATRIX_CREATION_AUDIO_BASE_URL`, `ARTIST_MATRIX_CREATION_AUDIO_CALLBACK_URL`, `ARTIST_MATRIX_CREATION_AUDIO_LOG_DIR`) to swap in custom LLM, diffusion, or audio connectors (default `stub`).
 
 ## Project Layout
 - `src/artist_matrix/`: Core packages for each agent node and shared state.

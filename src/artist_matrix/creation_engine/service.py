@@ -118,6 +118,13 @@ class CreationEngineService:
     ) -> Mapping[str, object]:
         lyrics = self.lyric_generator.generate_lyrics(profile, brief.track)
         track = self.audio_generator.render_track(profile, brief.track, lyrics)
+        logs: tuple[Path, ...] = ()
+        last_logs_getter = getattr(self.audio_generator, "last_run_logs", None)
+        if callable(last_logs_getter):
+            try:
+                logs = tuple(Path(p) for p in last_logs_getter())
+            except Exception:  # noqa: BLE001
+                logs = ()
 
         artwork = None
         if self.artwork_generator and brief.artwork is not None:
@@ -137,6 +144,7 @@ class CreationEngineService:
             "track": track,
             "artwork": artwork,
             "manifest_path": manifest_path,
+            "logs": logs,
         }
 
 

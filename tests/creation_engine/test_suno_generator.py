@@ -98,6 +98,8 @@ def test_suno_audio_generator_downloads_audio(
     def client_factory() -> httpx.Client:
         return httpx.Client(base_url="https://api.suno.fake", transport=transport)
 
+    log_dir = tmp_path / "logs"
+
     generator = SunoAudioGenerator(
         api_key="test-key",
         output_root=tmp_path,
@@ -107,6 +109,7 @@ def test_suno_audio_generator_downloads_audio(
         poll_interval=0.0,
         timeout_seconds=10.0,
         client_factory=client_factory,
+        log_dir=log_dir,
     )
 
     artifact = generator.render_track(artist_profile, spec, lyric_draft)
@@ -119,3 +122,12 @@ def test_suno_audio_generator_downloads_audio(
     assert expected_path.read_bytes() == b"AUDIO"
 
     assert poll_attempts["count"] >= 2
+
+    logs = generator.last_run_logs()
+    assert logs
+    for path in logs:
+        assert path.exists()
+        assert path.read_text(encoding="utf-8")  # non-empty
+
+    written_files = sorted(log_dir.glob("*.json"))
+    assert written_files

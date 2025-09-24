@@ -10,7 +10,7 @@ Use this playbook as the quick-start reference before working on the repo. It mi
 ## Tooling & Environment
 - Create a virtualenv with `uv venv --python 3.12 .venv` and install dependencies via `uv sync --all-extras`.
 - Run `uv run make verify` (ruff + mypy + pytest) before every commit.
-- Key env vars (`.env`) include persona (`ARTIST_MATRIX_PERSONA_PROVIDER/MODEL/API_KEY`), avatar (`ARTIST_MATRIX_AVATAR_PROVIDER/MODEL/API_KEY`), and audio generation (`ARTIST_MATRIX_CREATION_AUDIO_PROVIDER/MODEL/API_KEY/BASE_URL/CALLBACK_URL`). Copy `.env.example` and adjust per provider.
+- Key env vars (`.env`) include persona (`ARTIST_MATRIX_PERSONA_PROVIDER/MODEL/API_KEY`), avatar (`ARTIST_MATRIX_AVATAR_PROVIDER/MODEL/API_KEY`), and audio generation (`ARTIST_MATRIX_CREATION_AUDIO_PROVIDER/MODEL/API_KEY/BASE_URL/CALLBACK_URL/LOG_DIR`). Copy `.env.example` and adjust per provider.
 
 ## TUI Workflows
 - Main menu now offers: `[1] Generate Avatar`, `[2] Select Avatar`, `[3] Launch Creation`, `[4] Launch Echo`, `[Q] Quit`.

@@ -36,6 +36,7 @@ class ArtistMatrixSettings(BaseSettings):
     creation_audio_callback_url: str | None = Field(default=None)
     creation_audio_poll_interval: float = Field(default=5.0)
     creation_audio_timeout_seconds: float = Field(default=300.0)
+    creation_audio_log_dir: Path | None = Field(default=None)
 
 
 __all__ = ["ArtistMatrixSettings"]

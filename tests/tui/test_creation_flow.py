@@ -15,6 +15,7 @@ class RecordingCreationEngine:
         self.calls: list[tuple[ArtistProfile, CreationBrief]] = []
         self.manifest_path = manifest_path
         self.audio_path = audio_path
+        self.log_dir = manifest_path.parent / "logs"
 
     def produce_track(
         self,
@@ -26,6 +27,9 @@ class RecordingCreationEngine:
         self.manifest_path.write_text("{}", encoding="utf-8")
         self.audio_path.parent.mkdir(parents=True, exist_ok=True)
         self.audio_path.write_bytes(b"audio")
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = self.log_dir / "test-log.json"
+        log_path.write_text("{\n  \"status\": \"SUCCESS\"\n}", encoding="utf-8")
         return {
             "lyrics": LyricDraft(title=brief.track.title, body="line one\nline two"),
             "track": TrackArtifact(
@@ -34,6 +38,7 @@ class RecordingCreationEngine:
                 duration_seconds=120.0,
             ),
             "manifest_path": self.manifest_path,
+            "logs": (log_path,),
         }
 
 
@@ -76,3 +81,4 @@ def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> 
     assert "Creation Engine complete" in joined_output
     assert str(manifest_path) in joined_output
     assert str(audio_path) in joined_output
+    assert "Logs captured" in joined_output

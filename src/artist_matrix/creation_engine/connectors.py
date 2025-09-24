@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -96,6 +98,8 @@ class SunoAudioGenerator(AudioGenerator):
     timeout_seconds: float = 300.0
     client_factory: Callable[[], httpx.Client] | None = None
     download_chunk_size: int = 64 * 1024
+    log_dir: Path | None = None
+    _last_logs: list[Path] = field(default_factory=list, init=False, repr=False)
 
     def __post_init__(self) -> None:
         if not self.api_key:
@@ -114,6 +118,8 @@ class SunoAudioGenerator(AudioGenerator):
                 headers=headers,
                 timeout=httpx.Timeout(self.timeout_seconds, connect=10.0),
             )
+        if self.log_dir is not None:
+            self.log_dir.mkdir(parents=True, exist_ok=True)
 
     def render_track(
         self,
@@ -125,21 +131,58 @@ class SunoAudioGenerator(AudioGenerator):
         artist_dir.mkdir(parents=True, exist_ok=True)
         track_slug = _slugify(spec.title)
         output_path = artist_dir / f"{track_slug}.mp3"
+        self._last_logs = []
 
         if self.client_factory is None:
             raise RuntimeError("SunoAudioGenerator client factory is not configured")
 
+        request_payload = self._build_request_payload(profile, spec, lyrics)
+        logger.info(
+            "Submitting Suno generation",
+            extra={
+                "artist": profile.slug,
+                "track_title": spec.title,
+                "model": request_payload.get("model"),
+            },
+        )
+
         with self.client_factory() as client:
-            job_id = self._submit_job(client, profile, spec, lyrics)
-            job_payload = self._poll_job(client, job_id)
+            job_id = self._submit_job(client, request_payload)
+            if self.log_dir is not None:
+                self._write_log(profile.slug, job_id, "request", request_payload)
+            job_payload = self._poll_job(
+                client,
+                job_id,
+                log_hook=lambda status, payload: self._write_log(
+                    profile.slug,
+                    job_id,
+                    f"status_{status.lower() or 'unknown'}",
+                    payload,
+                )
+                if self.log_dir is not None
+                else None,
+            )
             result_payload = self._select_primary_result(job_payload)
             audio_url = self._extract_audio_url(result_payload)
             duration = self._extract_duration(result_payload)
             self._download_audio(client, audio_url, output_path)
 
+        logger.info(
+            "Suno generation completed",
+            extra={
+                "artist": profile.slug,
+                "track_title": spec.title,
+                "job_id": job_id,
+                "duration": duration,
+            },
+        )
+
         preview_url = result_payload.get("streamAudioUrl")
         if not isinstance(preview_url, str):
             preview_url = None
+
+        if self.log_dir is not None:
+            self._write_log(profile.slug, job_id, "completion", job_payload)
 
         return TrackArtifact(
             title=spec.title,
@@ -153,10 +196,66 @@ class SunoAudioGenerator(AudioGenerator):
     def _submit_job(
         self,
         client: httpx.Client,
+        payload: dict[str, object],
+    ) -> str:
+        response = client.post("/api/v1/generate", json=payload)
+        response.raise_for_status()
+        data = response.json()
+        if data.get("code") != 200:
+            raise RuntimeError(f"Suno API error {data.get('code')}: {data.get('msg')}")
+        job_id = data.get("data", {}).get("taskId")
+        if not job_id:
+            raise RuntimeError("Suno API response missing taskId")
+        return str(job_id)
+
+    def _poll_job(
+        self,
+        client: httpx.Client,
+        job_id: str,
+        log_hook: Callable[[str, dict[str, object]], None] | None = None,
+    ) -> dict[str, object]:
+        deadline = time.monotonic() + self.timeout_seconds
+        status_path = "/api/v1/generate/record-info"
+        last_payload: dict[str, object] | None = None
+        last_status: str | None = None
+        while time.monotonic() < deadline:
+            response = client.get(status_path, params={"taskId": job_id})
+            response.raise_for_status()
+            payload = response.json()
+            last_payload = payload
+            if payload.get("code") != 200:
+                raise RuntimeError(
+                    f"Suno status error {payload.get('code')}: {payload.get('msg')}"
+                )
+            data = payload.get("data")
+            if isinstance(data, dict):
+                status = str(data.get("status", "")).upper()
+                if log_hook is not None and status != last_status:
+                    log_hook(status or "UNKNOWN", payload)
+                    last_status = status
+                if status in {"SUCCESS", "FIRST_SUCCESS", "TEXT_SUCCESS"}:
+                    return data
+                if status in {
+                    "CREATE_TASK_FAILED",
+                    "GENERATE_AUDIO_FAILED",
+                    "CALLBACK_EXCEPTION",
+                    "SENSITIVE_WORD_ERROR",
+                }:
+                    error_message = data.get("errorMessage") or payload.get("msg")
+                    raise RuntimeError(
+                        f"Suno generation failed ({status}): {error_message}"
+                    )
+            time.sleep(max(self.poll_interval, 0.0))
+        raise TimeoutError(
+            f"Timed out waiting for Suno generation {job_id}; last payload: {json.dumps(last_payload or {}, indent=2)}"
+        )
+
+    def _build_request_payload(
+        self,
         profile: ArtistProfile,
         spec: TrackJobSpec,
         lyrics: LyricDraft,
-    ) -> str:
+    ) -> dict[str, object]:
         prompt = self._build_prompt(profile, spec, lyrics)
         style = spec.mood or profile.visual_style or profile.lyric_style or "Experimental"
         title = spec.title or f"{profile.name} Track"
@@ -179,49 +278,7 @@ class SunoAudioGenerator(AudioGenerator):
             payload["styleWeight"] = 0.65
             payload["weirdnessConstraint"] = 0.65
             payload["audioWeight"] = 0.65
-
-        response = client.post("/api/v1/generate", json=payload)
-        response.raise_for_status()
-        data = response.json()
-        if data.get("code") != 200:
-            raise RuntimeError(f"Suno API error {data.get('code')}: {data.get('msg')}")
-        job_id = data.get("data", {}).get("taskId")
-        if not job_id:
-            raise RuntimeError("Suno API response missing taskId")
-        return str(job_id)
-
-    def _poll_job(self, client: httpx.Client, job_id: str) -> dict[str, object]:
-        deadline = time.monotonic() + self.timeout_seconds
-        status_path = "/api/v1/generate/record-info"
-        last_payload: dict[str, object] | None = None
-        while time.monotonic() < deadline:
-            response = client.get(status_path, params={"taskId": job_id})
-            response.raise_for_status()
-            payload = response.json()
-            last_payload = payload
-            if payload.get("code") != 200:
-                raise RuntimeError(
-                    f"Suno status error {payload.get('code')}: {payload.get('msg')}"
-                )
-            data = payload.get("data")
-            if isinstance(data, dict):
-                status = str(data.get("status", "")).upper()
-                if status in {"SUCCESS", "FIRST_SUCCESS", "TEXT_SUCCESS"}:
-                    return data
-                if status in {
-                    "CREATE_TASK_FAILED",
-                    "GENERATE_AUDIO_FAILED",
-                    "CALLBACK_EXCEPTION",
-                    "SENSITIVE_WORD_ERROR",
-                }:
-                    error_message = data.get("errorMessage") or payload.get("msg")
-                    raise RuntimeError(
-                        f"Suno generation failed ({status}): {error_message}"
-                    )
-            time.sleep(max(self.poll_interval, 0.0))
-        raise TimeoutError(
-            f"Timed out waiting for Suno generation {job_id}; last payload: {json.dumps(last_payload or {}, indent=2)}"
-        )
+        return payload
 
     def _select_primary_result(self, payload: dict[str, object]) -> dict[str, object]:
         response = payload.get("response")
@@ -271,6 +328,28 @@ class SunoAudioGenerator(AudioGenerator):
             content = f"Instrumental piece inspired by {profile.name}"
         return content[:5000]
 
+    def _write_log(
+        self,
+        artist_slug: str,
+        job_id: str,
+        stage: str,
+        payload: dict[str, object],
+    ) -> None:
+        if self.log_dir is None:
+            return
+        safe_stage = stage.replace("/", "_").replace(" ", "-")
+        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        filename = f"suno_{timestamp}_{artist_slug}_{job_id}_{safe_stage}.json"
+        path = self.log_dir / filename
+        try:
+            path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+            self._last_logs.append(path)
+        except OSError as exc:  # noqa: BLE001
+            logger.warning("Failed to write Suno log", extra={"path": str(path), "error": str(exc)})
+
+    def last_run_logs(self) -> tuple[Path, ...]:
+        return tuple(self._last_logs)
+
 
 def build_audio_generator(settings: ArtistMatrixSettings) -> AudioGenerator:
     provider = settings.creation_audio_provider.lower()
@@ -296,6 +375,7 @@ def build_audio_generator(settings: ArtistMatrixSettings) -> AudioGenerator:
             callback_url=settings.creation_audio_callback_url,
             poll_interval=settings.creation_audio_poll_interval,
             timeout_seconds=settings.creation_audio_timeout_seconds,
+            log_dir=settings.creation_audio_log_dir,
         )
     raise NotImplementedError(
         f"Audio provider '{settings.creation_audio_provider}' is not implemented."
@@ -316,3 +396,4 @@ __all__ = [
     "HeuristicLyricGenerator",
     "build_lyric_generator",
 ]
+logger = logging.getLogger(__name__)

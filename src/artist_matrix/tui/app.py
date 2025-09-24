@@ -480,6 +480,14 @@ class TuiApp:
         if not isinstance(lyrics, LyricDraft):
             lyrics = None
 
+        captured_logs: tuple[Path, ...] = ()
+        log_value = result.get("logs") if isinstance(result, dict) else None
+        if isinstance(log_value, (list, tuple)):
+            captured_logs = tuple(
+                Path(item) if not isinstance(item, Path) else item
+                for item in log_value
+            )
+
         summary = [
             "",
             f"Creation Engine complete via provider '{provider}'.",
@@ -500,6 +508,15 @@ class TuiApp:
             summary.append(f" → Lyrics lead: {snippet}")
         if provider == "stub":
             summary.append(" (Stub provider wrote placeholder audio bytes.)")
+        if captured_logs:
+            summary.append(" Logs captured:")
+            for path in captured_logs[:3]:
+                summary.append(f"   {path}")
+            if len(captured_logs) > 3:
+                summary.append("   …")
+        log_dir = self.settings.creation_audio_log_dir
+        if log_dir is not None:
+            summary.append(f" Log files saved to: {log_dir}")
         self.output("\n".join(summary))
         self._post_persona_prompt()
 

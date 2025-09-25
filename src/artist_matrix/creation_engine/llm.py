@@ -105,7 +105,7 @@ def apply_llm_guidance(
         )
         return f"LLM unavailable ({exc})", draft
     updated_fields: dict[str, str] = {}
-    lines = [line.strip() for line in response.splitlines() if line.strip()]
+    lines = [line.strip() for line in response.replace("**", "").splitlines() if line.strip()]
     for line in lines:
         lowered = line.lower()
         if lowered.startswith("title:"):
@@ -118,6 +118,8 @@ def apply_llm_guidance(
             updated_fields["instrumental"] = line.split(":", 1)[1].strip()
         elif lowered.startswith("lyrics:"):
             updated_fields["lyrics"] = line.split(":", 1)[1].strip()
+        elif lowered.startswith("core vibe:"):
+            updated_fields["prompt"] = line.split(":", 1)[1].strip()
 
     updates: dict[str, object] = {
         "notes": tuple(list(draft.notes) + [response]),
@@ -128,6 +130,8 @@ def apply_llm_guidance(
         updates["title"] = updated_fields["title"]
     if "style" in updated_fields:
         updates["style"] = updated_fields["style"]
+    if "prompt" in updated_fields:
+        updates["prompt"] = updated_fields["prompt"]
     if "tags" in updated_fields:
         updates["tags"] = tuple(tag.strip() for tag in updated_fields["tags"].split(",") if tag.strip())
     if "instrumental" in updated_fields:

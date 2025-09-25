@@ -22,6 +22,7 @@ class TrackIdeationLLM:
     """Simple DeepSeek-backed chat client for track ideation."""
 
     client: httpx.Client
+    endpoint: str
     system_prompt: str
     model: str
     log_dir: Path | None = None
@@ -45,7 +46,7 @@ class TrackIdeationLLM:
         }
 
         logger.debug("Ideation LLM request", extra={"prompt": prompt[:60]})
-        response = self.client.post("/chat/completions", json=payload)
+        response = self.client.post(self.endpoint, json=payload)
         response.raise_for_status()
         data = response.json()
         content = data["choices"][0]["message"]["content"].strip()
@@ -61,8 +62,12 @@ class TrackIdeationLLM:
         if settings.persona_provider.lower() != "deepseek" or not settings.persona_api_key:
             return None
         endpoint = settings.persona_endpoint or "https://api.deepseek.com/v1"
+        endpoint = endpoint.rstrip("/")
+        if endpoint.endswith("/chat/completions"):
+            final_endpoint = endpoint
+        else:
+            final_endpoint = f"{endpoint}/chat/completions"
         client = httpx.Client(
-            base_url=endpoint,
             headers={
                 "Authorization": f"Bearer {settings.persona_api_key}",
                 "Content-Type": "application/json",
@@ -72,6 +77,7 @@ class TrackIdeationLLM:
         model = settings.persona_model or "deepseek-chat"
         return cls(
             client=client,
+            endpoint=final_endpoint,
             system_prompt=(
                 "You are a music production coach for persona '{persona}'."
                 " Help refine track briefs concisely without repeating previous context."

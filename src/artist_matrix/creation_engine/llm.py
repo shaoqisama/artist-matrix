@@ -80,7 +80,10 @@ class TrackIdeationLLM:
             endpoint=final_endpoint,
             system_prompt=(
                 "You are a music production coach for persona '{persona}'."
-                " Help refine track briefs concisely without repeating previous context."
+                " When the user shares ideas, respond only with a JSON object"
+                " containing keys: title, prompt, style, tags, negative_tags,"
+                " instrumental, lyrics, notes. Use arrays for tag keys,"
+                " booleans for instrumental, and concise strings elsewhere."
             ),
             model=model,
             log_dir=settings.persona_log_dir,
@@ -104,40 +107,65 @@ def apply_llm_guidance(
             extra={"error": str(exc)},
         )
         return f"LLM unavailable ({exc})", draft
-    updated_fields: dict[str, str] = {}
-    lines = [line.strip() for line in response.replace("**", "").splitlines() if line.strip()]
-    for line in lines:
-        lowered = line.lower()
-        if lowered.startswith("title:"):
-            updated_fields["title"] = line.split(":", 1)[1].strip()
-        elif lowered.startswith("vibe:") or lowered.startswith("style:"):
-            updated_fields["style"] = line.split(":", 1)[1].strip()
-        elif lowered.startswith("tags:"):
-            updated_fields["tags"] = line.split(":", 1)[1].strip()
-        elif lowered.startswith("instrument"):
-            updated_fields["instrumental"] = line.split(":", 1)[1].strip()
-        elif lowered.startswith("lyrics:"):
-            updated_fields["lyrics"] = line.split(":", 1)[1].strip()
-        elif lowered.startswith("core vibe:"):
-            updated_fields["prompt"] = line.split(":", 1)[1].strip()
+    cleaned = response.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        if cleaned.startswith("json"):
+            cleaned = cleaned[4:]
+
+    updated_fields: dict[str, object] = {}
+    try:
+        parsed = json.loads(cleaned)
+        if isinstance(parsed, dict):
+            updated_fields = parsed
+    except json.JSONDecodeError:
+        logger.debug("LLM response not JSON; falling back to heuristic", extra={"response": response})
+        lines = [line.strip() for line in response.replace("**", "").splitlines() if line.strip()]
+        for line in lines:
+            lowered = line.lower()
+            if lowered.startswith("title:"):
+                updated_fields["title"] = line.split(":", 1)[1].strip()
+            elif lowered.startswith("vibe:") or lowered.startswith("style:"):
+                updated_fields["style"] = line.split(":", 1)[1].strip()
+            elif lowered.startswith("tags:"):
+                updated_fields["tags"] = [part.strip() for part in line.split(":", 1)[1].split(",") if part.strip()]
+            elif lowered.startswith("instrument"):
+                updated_fields["instrumental"] = line.split(":", 1)[1].strip()
+            elif lowered.startswith("lyrics:"):
+                updated_fields["lyrics"] = line.split(":", 1)[1].strip()
+            elif lowered.startswith("core vibe:"):
+                updated_fields["prompt"] = line.split(":", 1)[1].strip()
 
     updates: dict[str, object] = {
         "notes": tuple(list(draft.notes) + [response]),
         "summary": response,
         "extracted_fields": {**(draft.extracted_fields or {}), **updated_fields} if updated_fields else draft.extracted_fields,
     }
-    if "title" in updated_fields:
-        updates["title"] = updated_fields["title"]
-    if "style" in updated_fields:
-        updates["style"] = updated_fields["style"]
-    if "prompt" in updated_fields:
-        updates["prompt"] = updated_fields["prompt"]
-    if "tags" in updated_fields:
-        updates["tags"] = tuple(tag.strip() for tag in updated_fields["tags"].split(",") if tag.strip())
-    if "instrumental" in updated_fields:
-        updates["instrumental"] = updated_fields["instrumental"].lower() in {"yes", "y", "true", "1"}
-    if "lyrics" in updated_fields:
-        updates["lyrics"] = updated_fields["lyrics"]
+    title = updated_fields.get("title")
+    if isinstance(title, str) and title:
+        updates["title"] = title
+    style = updated_fields.get("style")
+    if isinstance(style, str) and style:
+        updates["style"] = style
+    prompt_value = updated_fields.get("prompt")
+    if isinstance(prompt_value, str) and prompt_value:
+        updates["prompt"] = prompt_value
+    tags_value = updated_fields.get("tags")
+    if isinstance(tags_value, list):
+        updates["tags"] = tuple(str(tag).strip() for tag in tags_value if str(tag).strip())
+    elif isinstance(tags_value, str):
+        updates["tags"] = tuple(part.strip() for part in tags_value.split(",") if part.strip())
+    negative_value = updated_fields.get("negative_tags")
+    if isinstance(negative_value, list):
+        updates["negative_tags"] = tuple(str(tag).strip() for tag in negative_value if str(tag).strip())
+    instrumental_value = updated_fields.get("instrumental")
+    if isinstance(instrumental_value, bool):
+        updates["instrumental"] = instrumental_value
+    elif isinstance(instrumental_value, str):
+        updates["instrumental"] = instrumental_value.lower() in {"yes", "y", "true", "1"}
+    lyrics_value = updated_fields.get("lyrics")
+    if isinstance(lyrics_value, str) and lyrics_value:
+        updates["lyrics"] = lyrics_value
 
     new_draft = draft.model_copy(update=updates)
     new_draft.update_timestamp()

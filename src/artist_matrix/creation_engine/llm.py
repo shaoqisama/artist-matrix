@@ -23,6 +23,7 @@ class TrackIdeationLLM:
 
     client: httpx.Client
     system_prompt: str
+    model: str
     log_dir: Path | None = None
 
     def chat(
@@ -39,7 +40,7 @@ class TrackIdeationLLM:
         messages.append({"role": "user", "content": prompt})
 
         payload = {
-            "model": "deepseek-chat",
+            "model": self.model,
             "messages": messages,
         }
 
@@ -68,12 +69,14 @@ class TrackIdeationLLM:
             },
             timeout=30.0,
         )
+        model = settings.persona_model or "deepseek-chat"
         return cls(
             client=client,
             system_prompt=(
                 "You are a music production coach for persona '{persona}'."
                 " Help refine track briefs concisely without repeating previous context."
             ),
+            model=model,
             log_dir=settings.persona_log_dir,
         )
 
@@ -90,8 +93,11 @@ def apply_llm_guidance(
     try:
         response = llm.chat(persona_summary, user_message, transcript)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("LLM ideation call failed", extra={"error": str(exc)})
-        return None, draft
+        logger.warning(
+            "LLM ideation call failed",
+            extra={"error": str(exc)},
+        )
+        return f"LLM unavailable ({exc})", draft
     notes = list(draft.notes)
     notes.append(response)
     new_draft = draft.model_copy(update={"notes": tuple(notes)})

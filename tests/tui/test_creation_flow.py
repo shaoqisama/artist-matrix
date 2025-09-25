@@ -42,6 +42,11 @@ class RecordingCreationEngine:
         }
 
 
+class DummyLLM:
+    def chat(self, persona_summary: str, prompt: str, transcript):
+        return f"LLM suggests: {prompt[:20]} with extra synth layers."
+
+
 def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(tmp_path))
     monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
@@ -112,6 +117,7 @@ def test_creation_chat_updates_draft(monkeypatch, tmp_path: Path) -> None:
         output_func=outputs.append,
         session=session,
     )
+    app.ideation_llm = DummyLLM()
 
     app.handle_creation_chat()
 

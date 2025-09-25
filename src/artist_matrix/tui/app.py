@@ -633,7 +633,7 @@ class TuiApp:
         self.output(
             " Enter commands like 'title: Signal Burn' or 'tags: neon, cyberpunk'."
         )
-        self.output(" Type 'done' when satisfied or 'help' to list fields.")
+        self.output(" Type 'done' when satisfied, 'help' for fields, or 'quit' to exit.")
         session_turns: list[ChatTurn] = []
         while True:
             user_input = self._input("You> ").strip()
@@ -659,7 +659,7 @@ class TuiApp:
             self.session.track_draft = draft
             persona_summary = self._persona_summary(profile)
             llm_response = None
-            if not updated:
+            if updated == "notes" or (updated is None and self.ideation_llm is not None):
                 llm_response, draft = apply_llm_guidance(
                     self.ideation_llm,
                     persona_summary,
@@ -668,7 +668,7 @@ class TuiApp:
                     draft,
                 )
                 self.session.track_draft = draft
-            if updated:
+            if updated and updated != "notes":
                 response = f"Updated {updated}."
                 logger.debug(
                     "Track draft update",

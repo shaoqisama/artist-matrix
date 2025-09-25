@@ -10,7 +10,7 @@
 - `src/artist_matrix/creation_engine/service.py`: Orchestrates lyric/audio/artwork jobs and manifest writes.
 - `src/artist_matrix/creation_engine/connectors.py`: Stub + Suno audio generators, heuristic lyric generator, and factory helpers.
 - `src/artist_matrix/creation_engine/ideation.py`: Track ideation drafts, transcripts, and persistence utilities.
-- `src/artist_matrix/creation_engine/llm.py`: Optional DeepSeek-powered ideation chat client and helpers.
+- `src/artist_matrix/creation_engine/llm.py`: Optional DeepSeek-powered ideation chat client and helpers (loads `prompts/creation/ideation_system.md`).
 - `src/artist_matrix/creation_engine/finalize.py`: Suno payload preview helpers used by the TUI finalize step.
 - `src/artist_matrix/interfaces/production.py`: Protocol definitions for lyric, audio, and artwork generators.
 - `src/artist_matrix/state/jobs.py`: Dataclasses describing track and artwork job specs.

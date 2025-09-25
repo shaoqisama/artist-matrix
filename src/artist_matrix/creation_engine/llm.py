@@ -75,16 +75,20 @@ class TrackIdeationLLM:
             timeout=30.0,
         )
         model = settings.persona_model or "deepseek-chat"
+        prompt_path = settings.prompts_root / "creation" / "ideation_system.md"
+        try:
+            system_prompt = prompt_path.read_text(encoding="utf-8").strip()
+        except FileNotFoundError:
+            system_prompt = (
+                "You are a music production coach for persona '{persona}'."
+                " Respond only with JSON containing keys title, prompt, style,"
+                " tags, negative_tags, instrumental, lyrics, notes."
+            )
+
         return cls(
             client=client,
             endpoint=final_endpoint,
-            system_prompt=(
-                "You are a music production coach for persona '{persona}'."
-                " When the user shares ideas, respond only with a JSON object"
-                " containing keys: title, prompt, style, tags, negative_tags,"
-                " instrumental, lyrics, notes. Use arrays for tag keys,"
-                " booleans for instrumental, and concise strings elsewhere."
-            ),
+            system_prompt=system_prompt,
             model=model,
             log_dir=settings.persona_log_dir,
         )

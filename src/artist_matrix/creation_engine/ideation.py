@@ -44,6 +44,8 @@ class TrackIdeationDraft(BaseModel):
     audio_weight: float | None = None
     notes: Sequence[str] = Field(default_factory=tuple)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    summary: str | None = None
+    extracted_fields: dict[str, str] | None = None
 
     def update_timestamp(self) -> None:
         object.__setattr__(self, "updated_at", datetime.utcnow())

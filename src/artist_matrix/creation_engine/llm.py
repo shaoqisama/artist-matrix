@@ -104,9 +104,38 @@ def apply_llm_guidance(
             extra={"error": str(exc)},
         )
         return f"LLM unavailable ({exc})", draft
-    notes = list(draft.notes)
-    notes.append(response)
-    new_draft = draft.model_copy(update={"notes": tuple(notes)})
+    updated_fields: dict[str, str] = {}
+    lines = [line.strip() for line in response.splitlines() if line.strip()]
+    for line in lines:
+        lowered = line.lower()
+        if lowered.startswith("title:"):
+            updated_fields["title"] = line.split(":", 1)[1].strip()
+        elif lowered.startswith("vibe:") or lowered.startswith("style:"):
+            updated_fields["style"] = line.split(":", 1)[1].strip()
+        elif lowered.startswith("tags:"):
+            updated_fields["tags"] = line.split(":", 1)[1].strip()
+        elif lowered.startswith("instrument"):
+            updated_fields["instrumental"] = line.split(":", 1)[1].strip()
+        elif lowered.startswith("lyrics:"):
+            updated_fields["lyrics"] = line.split(":", 1)[1].strip()
+
+    updates: dict[str, object] = {
+        "notes": tuple(list(draft.notes) + [response]),
+        "summary": response,
+        "extracted_fields": {**(draft.extracted_fields or {}), **updated_fields} if updated_fields else draft.extracted_fields,
+    }
+    if "title" in updated_fields:
+        updates["title"] = updated_fields["title"]
+    if "style" in updated_fields:
+        updates["style"] = updated_fields["style"]
+    if "tags" in updated_fields:
+        updates["tags"] = tuple(tag.strip() for tag in updated_fields["tags"].split(",") if tag.strip())
+    if "instrumental" in updated_fields:
+        updates["instrumental"] = updated_fields["instrumental"].lower() in {"yes", "y", "true", "1"}
+    if "lyrics" in updated_fields:
+        updates["lyrics"] = updated_fields["lyrics"]
+
+    new_draft = draft.model_copy(update=updates)
     new_draft.update_timestamp()
     return response, new_draft
 

@@ -494,6 +494,9 @@ class TuiApp:
             if draft.lyrics:
                 snippet = draft.lyrics.splitlines()[0][:80]
                 self.output(f"  Lyrics seed : {snippet}{'…' if len(draft.lyrics) > 80 else ''}")
+            if draft.summary:
+                self.output("  Summary     :")
+                self.output(f"   {draft.summary[:100]}{'…' if len(draft.summary) > 100 else ''}")
         if brief.artwork:
             self.output(" Artwork")
             self.output(f"  Style      : {brief.artwork.style}")

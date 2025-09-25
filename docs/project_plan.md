@@ -98,3 +98,9 @@
 - [x] Extend the TUI Creation menu with a chat-driven “Discuss track concept” flow that collaborates with an LLM (DeepSeek) seeded by the selected persona.
 - [x] Convert the approved draft into Suno-ready payload fields (title/style/instrumental/custom mode, tags, lyrics) before submission and allow manual edits.
 - [x] Persist transcripts + final briefs, update documentation (`docs/agents/creation_engine.md`, `README.md`) and add tests covering chat, draft save/load, and Suno hand-off using the curated prompt.
+
+## Milestone 17: Ideation-to-Render Handoff Enhancements
+- [ ] Capture structured fields (prompt/style/tags/instrumental/lyrics) automatically from LLM replies and surface them in the draft summary for confirmation.
+- [ ] Add a “Finalize draft” step that locks the curated brief, shows a Suno payload preview, and lets users tweak before rendering.
+- [ ] Persist finalized briefs separately (e.g., `drafts/<slug>_final.json`) and load them when re-opening the workbench.
+- [ ] Expand tests to cover auto-field extraction, finalize flow, and Suno submission using the enriched draft; update docs (README, agent guide) with the improved workflow.

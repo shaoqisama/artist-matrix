@@ -444,10 +444,10 @@ class TuiApp:
     def _post_persona_prompt(self) -> None:
         while True:
             selection = self._input(
-                "Next action [c]reation engine / [e]cho chamber / [m]ain menu: "
+                "Next action [c]reation workbench / [e]cho chamber / [m]ain menu: "
             ).strip().lower()
             if selection in {"c", "creation", "3"}:
-                self.handle_creation_engine()
+                self.handle_creation_menu()
                 return
             if selection in {"e", "echo", "4"}:
                 self.handle_echo_chamber()

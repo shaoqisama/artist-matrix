@@ -644,6 +644,10 @@ class TuiApp:
             " Enter commands like 'title: Signal Burn' or 'tags: neon, cyberpunk'."
         )
         self.output(" Type 'done' when satisfied, 'help' for fields, or 'quit' to exit.")
+        if self.ideation_llm is None:
+            self.output(
+                " AI assistant disabled (configure ARTIST_MATRIX_PERSONA_PROVIDER/MODEL/API_KEY for DeepSeek)."
+            )
         session_turns: list[ChatTurn] = []
         while True:
             user_input = self._input("You> ").strip()

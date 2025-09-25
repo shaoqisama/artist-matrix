@@ -106,6 +106,6 @@
 - [ ] Expand tests to cover auto-field extraction, finalize flow, and Suno submission using the enriched draft; update docs (README, agent guide) with the improved workflow.
 
 ## Milestone 18: end-to-end TUI regression harness
-- [ ] Build a high-level integration harness that drives the TUI with scripted inputs (e.g., `expect`/pty-based runner) covering persona creation, ideation, finalize, and Suno render, using environment toggles to mock external calls.
+- [x] Build a high-level integration harness that drives the TUI with scripted inputs (e.g., `expect`/pty-based runner) covering persona creation, ideation, finalize, and Suno render, using environment toggles to mock external calls.
 - [ ] Add fixture scripts for persona + Suno connectors so we can replay collaborative sessions without hitting real APIs; parameterize to optionally hit live services when credentials are present.
 - [ ] Integrate the harness into CI (`uv run make verify-e2e`) and document local usage for contributors who want to smoke-test the full experience without manual input.

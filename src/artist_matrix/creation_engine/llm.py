@@ -171,9 +171,29 @@ def apply_llm_guidance(
     if isinstance(lyrics_value, str) and lyrics_value:
         updates["lyrics"] = lyrics_value
 
+    display_message = response
+    if updated_fields:
+        parts = []
+        title = updates.get("title")
+        if isinstance(title, str) and title:
+            parts.append(f"title='{title}'")
+        if isinstance(style, str) and style:
+            parts.append(f"style='{style}'")
+        prompt_value = updates.get("prompt")
+        if isinstance(prompt_value, str) and prompt_value:
+            parts.append(f"prompt={prompt_value[:40]}{'…' if len(prompt_value) > 40 else ''}")
+        tags_tuple = updates.get("tags")
+        if isinstance(tags_tuple, tuple) and tags_tuple:
+            parts.append(f"tags={', '.join(tags_tuple[:3])}")
+        if isinstance(instrumental_value, (bool, str)):
+            parts.append(
+                f"instrumental={'yes' if updates.get('instrumental') else 'no'}"
+            )
+        display_message = "Updated draft: " + ", ".join(parts) if parts else "Draft updated with new notes."
+
     new_draft = draft.model_copy(update=updates)
     new_draft.update_timestamp()
-    return response, new_draft
+    return display_message, new_draft
 
 
 __all__ = ["TrackIdeationLLM", "apply_llm_guidance"]

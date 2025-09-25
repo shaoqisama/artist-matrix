@@ -53,5 +53,5 @@ def test_apply_llm_guidance_appends_notes() -> None:
     response, updated = apply_llm_guidance(DummyLLM(), "Neon Wasteland persona", "Add more energy.", turns, draft)
 
     assert response is not None
-    assert "retro arps" in response.lower()
-    assert "retro arps" in " ".join(updated.notes)
+    assert "draft updated" in response.lower()
+    assert any("retro" in note.lower() for note in updated.notes)

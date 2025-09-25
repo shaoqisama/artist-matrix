@@ -86,6 +86,8 @@ def test_creation_finalize_flow(monkeypatch, tmp_path: Path) -> None:
     assert session.track_draft.finalized is True
     final_path = app.ideation_store.final_path(profile.slug)
     assert final_path.exists()
+    preview_lines = [line for line in outputs if "Suno Payload Preview" in line]
+    assert preview_lines
 
 
 def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> None:

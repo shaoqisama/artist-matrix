@@ -141,10 +141,32 @@ def apply_llm_guidance(
             elif lowered.startswith("core vibe:"):
                 updated_fields["prompt"] = normalized.split(":", 1)[1].strip().strip('"')
 
+    new_notes = list(draft.notes)
+    note_entry = updated_fields.get("notes")
+    if isinstance(note_entry, str) and note_entry:
+        new_notes.append(note_entry)
+    else:
+        new_notes.append(response)
+
+    safe_fields: dict[str, str] = {}
+    for key, value in updated_fields.items():
+        if value is None:
+            continue
+        if isinstance(value, list):
+            safe_fields[key] = ", ".join(str(item).strip() for item in value if str(item).strip())
+        elif isinstance(value, bool):
+            safe_fields[key] = "yes" if value else "no"
+        else:
+            safe_fields[key] = str(value)
+
+    base_fields = dict(draft.extracted_fields or {})
+    if safe_fields:
+        base_fields.update(safe_fields)
+
     updates: dict[str, object] = {
-        "notes": tuple(list(draft.notes) + [response]),
+        "notes": tuple(new_notes),
         "summary": response,
-        "extracted_fields": {**(draft.extracted_fields or {}), **updated_fields} if updated_fields else draft.extracted_fields,
+        "extracted_fields": base_fields if base_fields else draft.extracted_fields,
     }
     title = updated_fields.get("title")
     if isinstance(title, str) and title:
@@ -171,29 +193,33 @@ def apply_llm_guidance(
     lyrics_value = updated_fields.get("lyrics")
     if isinstance(lyrics_value, str) and lyrics_value:
         updates["lyrics"] = lyrics_value
-
-    display_message = response
-    if updated_fields:
-        parts = []
-        title = updates.get("title")
-        if isinstance(title, str) and title:
-            parts.append(f"title='{title}'")
-        if isinstance(style, str) and style:
-            parts.append(f"style='{style}'")
-        prompt_value = updates.get("prompt")
-        if isinstance(prompt_value, str) and prompt_value:
-            parts.append(f"prompt={prompt_value[:40]}{'…' if len(prompt_value) > 40 else ''}")
-        tags_tuple = updates.get("tags")
-        if isinstance(tags_tuple, tuple) and tags_tuple:
-            parts.append(f"tags={', '.join(tags_tuple[:3])}")
-        if isinstance(instrumental_value, (bool, str)):
-            parts.append(
-                f"instrumental={'yes' if updates.get('instrumental') else 'no'}"
-            )
-        display_message = "Updated draft: " + ", ".join(parts) if parts else "Draft updated with new notes."
-
     new_draft = draft.model_copy(update=updates)
     new_draft.update_timestamp()
+
+    message_parts = []
+    if new_draft.title != draft.title:
+        message_parts.append(f"title='{new_draft.title}'")
+    if new_draft.style != draft.style:
+        message_parts.append(f"style='{new_draft.style}'")
+    if new_draft.prompt and new_draft.prompt != draft.prompt:
+        snippet = new_draft.prompt[:40]
+        if len(new_draft.prompt) > 40:
+            snippet += "…"
+        message_parts.append(f"prompt={snippet}")
+    if new_draft.tags != draft.tags and new_draft.tags:
+        message_parts.append(f"tags={', '.join(new_draft.tags[:3])}")
+    if new_draft.negative_tags != draft.negative_tags and new_draft.negative_tags:
+        message_parts.append(f"negative={', '.join(new_draft.negative_tags[:3])}")
+    if new_draft.instrumental != draft.instrumental:
+        message_parts.append(f"instrumental={'yes' if new_draft.instrumental else 'no'}")
+    if new_draft.lyrics != draft.lyrics and new_draft.lyrics:
+        message_parts.append("lyrics=updated")
+
+    if message_parts:
+        display_message = "Updated draft: " + ", ".join(message_parts[:5])
+    else:
+        display_message = "Draft updated; added notes."
+
     return display_message, new_draft
 
 

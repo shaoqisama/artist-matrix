@@ -21,6 +21,7 @@ class SunoPayloadPreview:
     custom_mode: bool
     lyrics: str | None
     model: str | None
+    notes: str | None
 
     def as_json(self) -> Mapping[str, object]:
         return {
@@ -33,6 +34,7 @@ class SunoPayloadPreview:
             "customMode": self.custom_mode,
             "lyrics": self.lyrics,
             "model": self.model,
+            "notes": self.notes,
         }
 
 
@@ -48,6 +50,7 @@ def build_suno_preview(
     instrumental = draft.instrumental
     lyrics = draft.lyrics
     model = draft.model
+    notes = draft.notes[-1] if draft.notes else None
     return SunoPayloadPreview(
         title=draft.title or track_spec.title,
         prompt=prompt or track_spec.title,
@@ -58,6 +61,7 @@ def build_suno_preview(
         custom_mode=draft.custom_mode,
         lyrics=lyrics,
         model=model,
+        notes=notes,
     )
 
 

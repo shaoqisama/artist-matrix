@@ -909,6 +909,14 @@ class TuiApp:
             ("Finalized", "yes" if draft.finalized else "no"),
             ("Updated", draft.updated_at.isoformat(timespec="seconds")),
         ]
+        if draft.notes:
+            latest_note = draft.notes[-1]
+            fields.append(
+                (
+                    "Notes",
+                    latest_note[:80] + ("…" if len(latest_note) > 80 else ""),
+                )
+            )
         for label, value in fields:
             yield f"{label:12}: {value}"
 
@@ -930,6 +938,11 @@ class TuiApp:
             if len(preview.lyrics) > 100:
                 snippet += "…"
             lines.append(f"Lyrics seed  : {snippet}")
+        if preview.notes:
+            note_snippet = preview.notes[:100]
+            if len(preview.notes) > 100:
+                note_snippet += "…"
+            lines.append(f"Notes        : {note_snippet}")
         return lines
 
     def _sync_brief_with_draft(self, draft: TrackIdeationDraft) -> None:

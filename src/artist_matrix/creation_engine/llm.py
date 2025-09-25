@@ -124,21 +124,22 @@ def apply_llm_guidance(
             updated_fields = parsed
     except json.JSONDecodeError:
         logger.debug("LLM response not JSON; falling back to heuristic", extra={"response": response})
-        lines = [line.strip() for line in response.replace("**", "").splitlines() if line.strip()]
+        lines = [line.strip().strip(",{}[]") for line in response.replace("**", "").splitlines() if line.strip()]
         for line in lines:
-            lowered = line.lower()
+            normalized = line.lstrip('"')
+            lowered = normalized.lower()
             if lowered.startswith("title:"):
-                updated_fields["title"] = line.split(":", 1)[1].strip()
+                updated_fields["title"] = normalized.split(":", 1)[1].strip().strip('"')
             elif lowered.startswith("vibe:") or lowered.startswith("style:"):
-                updated_fields["style"] = line.split(":", 1)[1].strip()
+                updated_fields["style"] = normalized.split(":", 1)[1].strip().strip('"')
             elif lowered.startswith("tags:"):
-                updated_fields["tags"] = [part.strip() for part in line.split(":", 1)[1].split(",") if part.strip()]
+                updated_fields["tags"] = [part.strip().strip('"') for part in normalized.split(":", 1)[1].split(",") if part.strip()]
             elif lowered.startswith("instrument"):
-                updated_fields["instrumental"] = line.split(":", 1)[1].strip()
+                updated_fields["instrumental"] = normalized.split(":", 1)[1].strip().strip('"')
             elif lowered.startswith("lyrics:"):
-                updated_fields["lyrics"] = line.split(":", 1)[1].strip()
+                updated_fields["lyrics"] = normalized.split(":", 1)[1].strip().strip('"')
             elif lowered.startswith("core vibe:"):
-                updated_fields["prompt"] = line.split(":", 1)[1].strip()
+                updated_fields["prompt"] = normalized.split(":", 1)[1].strip().strip('"')
 
     updates: dict[str, object] = {
         "notes": tuple(list(draft.notes) + [response]),

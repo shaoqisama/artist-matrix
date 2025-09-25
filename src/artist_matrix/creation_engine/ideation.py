@@ -46,6 +46,7 @@ class TrackIdeationDraft(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     summary: str | None = None
     extracted_fields: dict[str, str] | None = None
+    finalized: bool = False
 
     def update_timestamp(self) -> None:
         object.__setattr__(self, "updated_at", datetime.utcnow())
@@ -67,6 +68,9 @@ class TrackIdeationStore:
 
     def transcript_path(self, persona_slug: str) -> Path:
         return self._persona_root(persona_slug) / "latest_transcript.jsonl"
+
+    def final_path(self, persona_slug: str) -> Path:
+        return self._persona_root(persona_slug) / "final_brief.json"
 
     def save_draft(self, draft: TrackIdeationDraft) -> Path:
         path = self.draft_path(draft.persona_slug)
@@ -100,6 +104,30 @@ class TrackIdeationStore:
                 handle.write(turn.model_dump_json())
                 handle.write("\n")
         return path
+
+    def save_final(self, draft: TrackIdeationDraft) -> Path:
+        path = self.final_path(draft.persona_slug)
+        _logger.debug(
+            "Persisting final track draft",
+            extra={"persona": draft.persona_slug, "path": str(path)},
+        )
+        serialisable = json.loads(draft.model_dump_json())
+        path.write_text(json.dumps(serialisable, indent=2, sort_keys=True), encoding="utf-8")
+        return path
+
+    def load_final(self, persona_slug: str) -> TrackIdeationDraft | None:
+        path = self.final_path(persona_slug)
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return TrackIdeationDraft.model_validate(data)
+        except Exception as exc:  # noqa: BLE001
+            _logger.warning(
+                "Failed to load final draft",
+                extra={"persona": persona_slug, "path": str(path), "error": str(exc)},
+            )
+            return None
 
     def load_transcript(self, persona_slug: str) -> List[ChatTurn]:
         path = self.transcript_path(persona_slug)

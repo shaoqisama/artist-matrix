@@ -26,6 +26,8 @@ from artist_matrix.creation_engine import (
     TrackIdeationLLM,
     TrackIdeationStore,
     TrackManifestRepository,
+    SunoPayloadPreview,
+    build_suno_preview,
     apply_llm_guidance,
     build_audio_generator,
     build_lyric_generator,
@@ -380,9 +382,13 @@ class TuiApp:
             refinement_instructions=tuple(self._as_str_list(manifest.get("refinement_instructions", []))),
         )
         self._update_suggestions(profile, self.session.draft)
-        stored_draft = self.ideation_store.load_draft(profile.slug)
-        if stored_draft:
-            self.session.track_draft = stored_draft
+        final_draft = self.ideation_store.load_final(profile.slug)
+        if final_draft:
+            self.session.track_draft = final_draft
+        else:
+            stored_draft = self.ideation_store.load_draft(profile.slug)
+            if stored_draft:
+                self.session.track_draft = stored_draft
         self.session.transcript = self.ideation_store.load_transcript(profile.slug)
         self.output(
             " Use menu option 3 or 4 to launch Creation Engine or Echo Chamber with this persona."
@@ -590,7 +596,8 @@ class TuiApp:
         options = {
             "1": ("Discuss track concept", self.handle_creation_chat),
             "2": ("Review draft", self.handle_creation_draft_review),
-            "3": ("Render with Suno", self.handle_creation_engine),
+            "3": ("Finalize draft", self.handle_creation_finalize),
+            "4": ("Render with Suno", self.handle_creation_engine),
             "b": ("Back to main menu", None),
         }
         while True:
@@ -741,6 +748,71 @@ class TuiApp:
             else:
                 self.output(" Unrecognised command; use 'field: value'.")
 
+    def handle_creation_finalize(self) -> None:
+        profile = self.session.last_profile
+        if profile is None:
+            self.output(" No persona selected. Generate or select a profile first.")
+            return
+        draft = self._ensure_track_draft(profile)
+        brief = self.session.track_brief
+        if brief is None:
+            self.output(" No creation brief available. Generate or select a persona first.")
+            return
+
+        while True:
+            self._sync_brief_with_draft(draft)
+            brief = self.session.track_brief
+            if brief is None:
+                self.output(" Brief unavailable; returning to menu.")
+                return
+            preview = build_suno_preview(profile, draft, brief.track)
+            self.output("\n:: Suno Payload Preview ::")
+            for line in self._preview_lines(preview):
+                self.output(f" {line}")
+            self.output(
+                " Options: [e]dit field / [s]ave / [r]ender / [b]ack"
+            )
+            choice = self._input("finalize> ").strip().lower()
+            if choice in {"b", "back", "exit", ""}:
+                return
+            if choice in {"r", "render"}:
+                draft = draft.model_copy(update={"finalized": True})
+                draft.update_timestamp()
+                self.session.track_draft = draft
+                try:
+                    self.ideation_store.save_draft(draft)
+                    self.ideation_store.save_final(draft)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "Failed to persist final draft",
+                        extra={"persona": profile.slug, "error": str(exc)},
+                    )
+                self.handle_creation_engine()
+                return
+            if choice in {"s", "save"}:
+                draft = draft.model_copy(update={"finalized": True})
+                draft.update_timestamp()
+                self.session.track_draft = draft
+                try:
+                    self.ideation_store.save_draft(draft)
+                    self.ideation_store.save_final(draft)
+                    self.output(" Final draft saved.")
+                except Exception as exc:  # noqa: BLE001
+                    self.output(f" Failed to save final draft: {exc}")
+                continue
+            if choice in {"e", "edit"}:
+                command = self._input(" field command (e.g. title: Solar Bounce): ").strip()
+                if not command:
+                    continue
+                updated, draft = self._apply_draft_command(draft, command)
+                self.session.track_draft = draft
+                if updated:
+                    self.output(f" Updated {updated}.")
+                else:
+                    self.output(" Unrecognised command; use 'field: value'.")
+                continue
+            self.output("  Enter 'e', 's', 'r', or 'b'.")
+
     def _apply_draft_command(
         self,
         draft: TrackIdeationDraft,
@@ -830,10 +902,31 @@ class TuiApp:
                 + ("…" if draft.lyrics and len(draft.lyrics) > 80 else ""),
             ),
             ("Model", draft.model or "—"),
+            ("Finalized", "yes" if draft.finalized else "no"),
             ("Updated", draft.updated_at.isoformat(timespec="seconds")),
         ]
         for label, value in fields:
             yield f"{label:12}: {value}"
+
+    def _preview_lines(self, preview: SunoPayloadPreview) -> Iterable[str]:
+        tags = ", ".join(preview.tags) if preview.tags else "—"
+        negative = ", ".join(preview.negative_tags) if preview.negative_tags else "—"
+        lines = [
+            f"Title        : {preview.title}",
+            f"Prompt       : {preview.prompt[:100]}{'…' if len(preview.prompt) > 100 else ''}",
+            f"Style        : {preview.style or '—'}",
+            f"Tags         : {tags}",
+            f"Negative tags: {negative}",
+            f"Instrumental : {'yes' if preview.instrumental else 'no'}",
+            f"Custom mode  : {'yes' if preview.custom_mode else 'no'}",
+            f"Model        : {preview.model or '—'}",
+        ]
+        if preview.lyrics:
+            snippet = preview.lyrics[:100]
+            if len(preview.lyrics) > 100:
+                snippet += "…"
+            lines.append(f"Lyrics seed  : {snippet}")
+        return lines
 
     def _sync_brief_with_draft(self, draft: TrackIdeationDraft) -> None:
         brief = self.session.track_brief

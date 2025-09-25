@@ -9,6 +9,7 @@ from .connectors import (
 )
 from .ideation import ChatTurn, TrackIdeationDraft, TrackIdeationStore
 from .llm import TrackIdeationLLM, apply_llm_guidance
+from .finalize import SunoPayloadPreview, build_suno_preview
 from .service import CreationBrief, CreationEngineService, TrackManifestRepository
 
 __all__ = [
@@ -25,4 +26,6 @@ __all__ = [
     "TrackIdeationStore",
     "TrackIdeationLLM",
     "apply_llm_guidance",
+    "SunoPayloadPreview",
+    "build_suno_preview",
 ]

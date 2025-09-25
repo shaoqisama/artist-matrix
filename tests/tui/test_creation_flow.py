@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Iterator
 
 from artist_matrix.creation_engine import CreationBrief
+from artist_matrix.creation_engine import TrackIdeationDraft
 from artist_matrix.interfaces.production import LyricDraft, TrackArtifact
 from artist_matrix.soul_forge import ArtistProfile
 from artist_matrix.state.jobs import ArtworkJobSpec, TrackJobSpec
@@ -45,6 +46,46 @@ class RecordingCreationEngine:
 class DummyLLM:
     def chat(self, persona_summary: str, prompt: str, transcript):
         return f"LLM suggests: {prompt[:20]} with extra synth layers."
+
+
+def test_creation_finalize_flow(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(tmp_path))
+    monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
+    profile = ArtistProfile(
+        name="Neon Wasteland",
+        persona_tags=("cyberpunk",),
+        lyric_style="synth metal narration",
+        visual_style="retro neon",
+        influences=("Perturbator",),
+    )
+    brief = CreationBrief(
+        track=TrackJobSpec(title="Signal Burn", mood="fierce", references=("future",)),
+        artwork=None,
+    )
+    draft = TrackIdeationDraft(
+        persona_slug=profile.slug,
+        title="Solar Bounce",
+        prompt="Funky beach anthem",
+        style="sunny funk",
+        tags=("funk", "beach"),
+    )
+
+    inputs: Iterator[str] = iter(["s", "b"])
+    outputs: list[str] = []
+
+    session = SessionState(last_profile=profile, track_brief=brief, track_draft=draft)
+    app = TuiApp(
+        input_func=lambda _: next(inputs),
+        output_func=outputs.append,
+        session=session,
+    )
+
+    app.handle_creation_finalize()
+
+    assert session.track_draft is not None
+    assert session.track_draft.finalized is True
+    final_path = app.ideation_store.final_path(profile.slug)
+    assert final_path.exists()
 
 
 def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> None:

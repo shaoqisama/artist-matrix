@@ -109,7 +109,8 @@ def test_generate_avatar_flow_success(tmp_path: Path, stub_service: StubSoulForg
     assert session.last_profile is not None
     assert session.last_manifest_path is not None
     assert any("Persona forged successfully" in line for line in captured)
-    assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."
+    assert captured[-2] == "Shutting down Artist Matrix shell. See you in the wasteland."
+    assert captured[-1].startswith("Session log saved to")
 
 
 def test_generate_avatar_flow_edit_back(tmp_path: Path, stub_service: StubSoulForgeService) -> None:
@@ -153,7 +154,8 @@ def test_generate_avatar_flow_edit_back(tmp_path: Path, stub_service: StubSoulFo
     assert stub_service.requests
     request = stub_service.requests[-1]
     assert request.influences == ("Kavinsky", "Gunship")
-    assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."
+    assert captured[-2] == "Shutting down Artist Matrix shell. See you in the wasteland."
+    assert captured[-1].startswith("Session log saved to")
 
 
 def test_generate_avatar_flow_refine_with_ai(tmp_path: Path, stub_service: StubSoulForgeService) -> None:
@@ -193,4 +195,5 @@ def test_generate_avatar_flow_refine_with_ai(tmp_path: Path, stub_service: StubS
     request = stub_service.requests[-1]
     assert "Add cyberpunk edge" in request.refinement_instructions
     assert session.last_profile is not None
-    assert captured[-1] == "Shutting down Artist Matrix shell. See you in the wasteland."
+    assert captured[-2] == "Shutting down Artist Matrix shell. See you in the wasteland."
+    assert captured[-1].startswith("Session log saved to")

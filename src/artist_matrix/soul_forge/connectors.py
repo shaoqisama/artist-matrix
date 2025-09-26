@@ -155,6 +155,16 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
                             body = body[newline_index + 1 :]
                         content = body.strip()
                 payload_dict = json.loads(content)
+                for key in ("persona_tags", "influences", "visual_palette"):
+                    value = payload_dict.get(key)
+                    if isinstance(value, str):
+                        payload_dict[key] = [value]
+                if isinstance(payload_dict.get("visual_palette"), list):
+                    payload_dict["visual_palette"] = [str(item) for item in payload_dict["visual_palette"]]
+                if isinstance(payload_dict.get("persona_tags"), list):
+                    payload_dict["persona_tags"] = [str(item) for item in payload_dict["persona_tags"]]
+                if isinstance(payload_dict.get("influences"), list):
+                    payload_dict["influences"] = [str(item) for item in payload_dict["influences"]]
                 output = PersonaLLMOutput.model_validate(payload_dict)
                 if variables.safety_notes:
                     expected = variables.safety_notes.lower()

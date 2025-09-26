@@ -54,27 +54,20 @@ def test_creation_workbench_end_to_end(tmp_path: Path) -> None:
         "2",  # select persona menu
         "1",  # first persona
         "y",  # confirm load
-        "c",  # creation workbench
-        "1",  # discuss
-        "title: Solar Ache",
-        "style: bittersweet funk",
-        "tags: funky, melancholy",
-        "instrumental: no",
-        "lyrics: Verse line",
-        "done",
-        "3",  # finalize
-        "s",  # save final draft
-        "b",  # back
-        "4",  # render
+        "c",  # jump into workbench chat mode
+        "/edit title: Solar Ache",
+        "/edit style: bittersweet funk",
+        "/edit tags: funky, melancholy",
+        "/edit lyrics: Verse line",
+        "/show",
+        "/finalize",
         "y",  # confirm render
-        "m",  # acknowledge post persona prompt
-        "b",  # exit creation menu
+        "m",  # return to main menu after render summary
         "q",  # quit
     ]
 
     code, output = _run_tui(commands, env)
     assert code == 0, output
-    assert "Final draft saved" in output
     assert "Session log saved to" in output
     assert "Creation Engine complete" in output
 
@@ -89,4 +82,6 @@ def test_creation_workbench_end_to_end(tmp_path: Path) -> None:
 
     final_data = json.loads(final_path.read_text(encoding="utf-8"))
     assert final_data["title"] == "Solar Ache"
-    assert final_data.get("instrumental") is False
+    assert final_data["style"] == "bittersweet funk"
+    assert final_data["tags"] == ["funky", "melancholy"]
+    assert final_data["lyrics"] == "Verse line"

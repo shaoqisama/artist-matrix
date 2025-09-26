@@ -29,11 +29,7 @@ Use this playbook as the quick-start reference before working on the repo. It mi
 - Main menu offers: `[1] Generate Avatar`, `[2] Select Avatar`, `[3] Creation Workbench`, `[4] Launch Echo`, `[Q] Quit`.
 - "Generate" runs the multi-step wizard (back/edit/refine). After forging, jump directly into the workbench or echo flows.
 - "Select" enumerates `data/artists/*.json`, previews manifests, and loads the chosen persona into session state.
-- "Creation Workbench" provides:
-  1. **Discuss track concept** – persona-aware chat, prints both summaries and raw JSON from DeepSeek.
-  2. **Review draft** – manual editing via `field: value` commands.
-  3. **Finalize draft** – preview/tweak Suno payload, persist `drafts/final_brief.json`.
-  4. **Render with Suno** – submit curated brief, display manifest/log info.
+- "Creation Workbench" is a chat-first loop—type freeform prompts, adopt the AI's structured suggestions with `/adopt`, or `/edit <field>: <value>` to apply manual changes. Use `/show` for status, `/finalize` to preview the Suno payload, then confirm to render. Only adopted/edited fields flow into the payload; transcripts and drafts persist under `data/artists/<slug>/drafts/`.
 
 ## Connectors & Logging
 - Soul Forge integrates DeepSeek via `DeepSeekPersonaAgent`. Persona prompts live in `prompts/persona/`; creation chat prompt in `prompts/creation/ideation_system.md`.

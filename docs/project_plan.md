@@ -114,3 +114,30 @@
 - [x] Add configurable session logging for the TUI (input/output transcript) that redacts sensitive values and stores JSON lines under `logs/tui/<timestamp>.jsonl`.
 - [x] Surface log file paths to the user after each session and document retrieval/rotation guidance in README + docs/agents.
 - [ ] Extend e2e tests to assert log emission and add a CI-friendly toggle to disable logging when not needed.
+
+## Milestone 20: Chat‑First Creation Workbench (User‑Confirmed Only)
+- [x] Single chat screen in Workbench: show LLM guidance text plus an optional fenced JSON block for proposed field updates.
+- [x] Draft model (minimal): `title`, `style`, `tags[]`, `lyrics`, `notes`, `duration_sec`, `allow_instrumental`, `ref_url`; seed from persona when present.
+- [x] Parser: extract only recognized fields from the fenced JSON; ignore malformed/unknown keys without erroring.
+- [x] Strict adopt/edit flow: never auto‑apply; support `/adopt`, `/edit <field>: <value>`, `/show`, `/finalize`, `/undo`, `/help`.
+- [x] Finalize preview: build Suno payload solely from Draft; readiness requires `title`, `tags`, and either `lyrics` or detailed `style/notes`.
+- [x] Render step: submit via Suno (or stub), persist final Draft + payload + manifest under the selected artist’s track run; log chat turns and accepted deltas.
+- [x] Tests: unit (parser + Draft validators), TUI snapshots (adopt/edit/finalize), and one e2e happy path asserting Suno payload validity.
+
+### PR‑Sized Breakdown (Milestone 20)
+- [x] Draft model + validation: add model, seed from persona, unit tests.
+- [x] Chat UI + JSON parser: show LLM text + fenced JSON, parse into deltas, happy/edge tests.
+- [x] Adopt/edit/undo commands: update Draft only on accept/edit, snapshot tests.
+- [x] Finalize + payload builder: readiness checks and preview, unit tests for builder.
+- [x] Render + persistence + logging: submit via Suno/stub, persist artefacts, log turns/adoptions.
+- [x] E2E happy path: persona → chat → adopt → finalize → render (stub), assert payload + files written.
+
+## Milestone 21: Workbench Polish & Guardrails
+- [ ] Diff preview before adopt (side‑by‑side for text fields; key‑level for metadata) to reduce accidental changes.
+- [ ] Missing‑fields coach: after assistant replies, show what’s still needed; include readiness status in `/show`.
+- [ ] Lightweight safety checks (profanity toggle, basic copyright hints) with clear user feedback; non‑blocking unless configured.
+- [ ] Human‑friendly validation errors mapped from Pydantic; keep user in chat on failure with actionable hints.
+- [ ] Telemetry: count adoptions/undos; gate via `ARTIST_MATRIX_TUI_LOG_DIR`.
+- [ ] Additional tests for diffs, safety toggles, and error messages.
+
+ 

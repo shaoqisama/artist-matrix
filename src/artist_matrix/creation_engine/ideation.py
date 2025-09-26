@@ -25,28 +25,38 @@ class ChatTurn(BaseModel):
 
 
 class TrackIdeationDraft(BaseModel):
-    """Structured track brief assembled from persona + user inputs."""
+    """Minimal draft built only from user-confirmed fields."""
 
     persona_slug: str
     title: str | None = None
-    prompt: str | None = None
     style: str | None = None
     tags: Sequence[str] = Field(default_factory=tuple)
-    negative_tags: Sequence[str] = Field(default_factory=tuple)
-    references: Sequence[str] = Field(default_factory=tuple)
-    instrumental: bool = False
-    custom_mode: bool = True
-    vocal_gender: str | None = None
     lyrics: str | None = None
-    model: str | None = None
-    style_weight: float | None = None
-    weirdness_constraint: float | None = None
-    audio_weight: float | None = None
     notes: Sequence[str] = Field(default_factory=tuple)
+    duration_sec: int | None = None
+    allow_instrumental: bool = True
+    ref_url: str | None = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     summary: str | None = None
-    extracted_fields: dict[str, str] | None = None
-    finalized: bool = False
+
+    model_config = {
+        "extra": "ignore",
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "persona_slug": "neon-falcon",
+                    "title": "Signal Burn",
+                    "style": "glitch-pop anthem",
+                    "tags": ["glitch", "synth", "midnight"],
+                    "lyrics": "Verse...",
+                    "notes": ["keep vocals airy"],
+                    "duration_sec": 180,
+                    "allow_instrumental": True,
+                    "ref_url": "https://reference.example/signal-burn",
+                }
+            ]
+        }
+    }
 
     def update_timestamp(self) -> None:
         object.__setattr__(self, "updated_at", datetime.utcnow())

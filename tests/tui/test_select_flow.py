@@ -91,7 +91,7 @@ def test_creation_engine_suggestion(monkeypatch, manifest_dir: Path) -> None:
 
     app.handle_creation_engine()
 
-    assert any("Creation Engine" in line for line in outputs)
+    assert any("Suno Payload Preview" in line for line in outputs)
     assert any("Title" in line for line in outputs)
 
 

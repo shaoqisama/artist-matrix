@@ -6,62 +6,42 @@ from dataclasses import dataclass
 from typing import Mapping
 
 from artist_matrix.creation_engine.ideation import TrackIdeationDraft
-from artist_matrix.soul_forge import ArtistProfile
-from artist_matrix.state.jobs import TrackJobSpec
 
 
 @dataclass(frozen=True)
 class SunoPayloadPreview:
     title: str
-    prompt: str
     style: str | None
     tags: tuple[str, ...]
-    negative_tags: tuple[str, ...]
-    instrumental: bool
-    custom_mode: bool
     lyrics: str | None
-    model: str | None
-    notes: str | None
+    notes: tuple[str, ...]
+    duration_sec: int | None
+    allow_instrumental: bool
+    ref_url: str | None
 
     def as_json(self) -> Mapping[str, object]:
         return {
             "title": self.title,
-            "prompt": self.prompt,
             "style": self.style,
-            "tags": self.tags,
-            "negativeTags": self.negative_tags,
-            "instrumental": self.instrumental,
-            "customMode": self.custom_mode,
+            "tags": list(self.tags),
             "lyrics": self.lyrics,
-            "model": self.model,
-            "notes": self.notes,
+            "notes": list(self.notes),
+            "duration_sec": self.duration_sec,
+            "allow_instrumental": self.allow_instrumental,
+            "reference_url": self.ref_url,
         }
 
 
-def build_suno_preview(
-    profile: ArtistProfile,
-    draft: TrackIdeationDraft,
-    track_spec: TrackJobSpec,
-) -> SunoPayloadPreview:
-    prompt = draft.prompt or track_spec.narrative or track_spec.title
-    style = draft.style or track_spec.mood or profile.lyric_style
-    tags = tuple(draft.tags) if draft.tags else tuple(track_spec.references)
-    negative = tuple(draft.negative_tags)
-    instrumental = draft.instrumental
-    lyrics = draft.lyrics
-    model = draft.model
-    notes = draft.notes[-1] if draft.notes else None
+def build_suno_preview(draft: TrackIdeationDraft) -> SunoPayloadPreview:
     return SunoPayloadPreview(
-        title=draft.title or track_spec.title,
-        prompt=prompt or track_spec.title,
-        style=style,
-        tags=tags,
-        negative_tags=negative,
-        instrumental=instrumental,
-        custom_mode=draft.custom_mode,
-        lyrics=lyrics,
-        model=model,
-        notes=notes,
+        title=draft.title or "Untitled Track",
+        style=draft.style,
+        tags=tuple(draft.tags),
+        lyrics=draft.lyrics,
+        notes=tuple(draft.notes),
+        duration_sec=draft.duration_sec,
+        allow_instrumental=draft.allow_instrumental,
+        ref_url=draft.ref_url,
     )
 
 

@@ -3,8 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterator
 
-import json
-
 from artist_matrix.creation_engine import CreationBrief
 from artist_matrix.creation_engine import TrackIdeationDraft
 from artist_matrix.interfaces.production import LyricDraft, TrackArtifact
@@ -45,64 +43,6 @@ class RecordingCreationEngine:
         }
 
 
-class DummyLLM:
-    def chat(self, persona_summary: str, prompt: str, transcript):
-        return json.dumps(
-            {
-                "title": "Neon Signal",
-                "prompt": "A neon skyline ballad",
-                "style": "future funk",
-                "tags": ["neon", "synth"],
-                "negative_tags": [],
-                "instrumental": True,
-                "lyrics": "Verse line",
-                "notes": "Consider arps",
-            }
-        )
-
-
-def test_creation_finalize_flow(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(tmp_path))
-    monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
-    profile = ArtistProfile(
-        name="Neon Wasteland",
-        persona_tags=("cyberpunk",),
-        lyric_style="synth metal narration",
-        visual_style="retro neon",
-        influences=("Perturbator",),
-    )
-    brief = CreationBrief(
-        track=TrackJobSpec(title="Signal Burn", mood="fierce", references=("future",)),
-        artwork=None,
-    )
-    draft = TrackIdeationDraft(
-        persona_slug=profile.slug,
-        title="Solar Bounce",
-        prompt="Funky beach anthem",
-        style="sunny funk",
-        tags=("funk", "beach"),
-    )
-
-    inputs: Iterator[str] = iter(["s", "b"])
-    outputs: list[str] = []
-
-    session = SessionState(last_profile=profile, track_brief=brief, track_draft=draft)
-    app = TuiApp(
-        input_func=lambda _: next(inputs),
-        output_func=outputs.append,
-        session=session,
-    )
-
-    app.handle_creation_finalize()
-
-    assert session.track_draft is not None
-    assert session.track_draft.finalized is True
-    final_path = app.ideation_store.final_path(profile.slug)
-    assert final_path.exists()
-    preview_lines = [line for line in outputs if "Suno Payload Preview" in line]
-    assert preview_lines
-
-
 def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(tmp_path))
     monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
@@ -126,7 +66,14 @@ def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> 
     inputs: Iterator[str] = iter(["y", "m"])
     outputs: list[str] = []
 
-    session = SessionState(last_profile=profile, track_brief=brief)
+    draft = TrackIdeationDraft(
+        persona_slug=profile.slug,
+        title="Signal Burn",
+        style="fierce",
+        tags=("future",),
+        lyrics="Verse line",
+    )
+    session = SessionState(last_profile=profile, track_brief=brief, track_draft=draft)
     app = TuiApp(
         input_func=lambda prompt: next(inputs),
         output_func=outputs.append,
@@ -143,45 +90,3 @@ def test_handle_creation_engine_invokes_service(monkeypatch, tmp_path: Path) -> 
     assert str(manifest_path) in joined_output
     assert str(audio_path) in joined_output
     assert "Logs captured" in joined_output
-
-
-def test_creation_chat_updates_draft(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("ARTIST_MATRIX_DATA_ROOT", str(tmp_path))
-    monkeypatch.setenv("ARTIST_MATRIX_PERSONA_PROVIDER", "stub")
-    profile = ArtistProfile(
-        name="Neon Wasteland",
-        persona_tags=("cyberpunk",),
-        lyric_style="synth metal narration",
-        visual_style="retro neon",
-        influences=("Perturbator",),
-    )
-    brief = CreationBrief(track=TrackJobSpec(title="Signal Burn", mood="fierce"))
-
-    inputs: Iterator[str] = iter(
-        [
-            "Let's craft a neon skyline ballad",
-            "done",
-        ]
-    )
-    outputs: list[str] = []
-
-    session = SessionState(last_profile=profile, track_brief=brief)
-    app = TuiApp(
-        input_func=lambda _: next(inputs),
-        output_func=outputs.append,
-        session=session,
-    )
-    app.ideation_llm = DummyLLM()
-
-    app.handle_creation_chat()
-
-    draft = session.track_draft
-    assert draft is not None
-    assert draft.title == "Neon Signal"
-    assert draft.tags == ("neon", "synth")
-    assert draft.instrumental is True
-    assert any(line.startswith("AI (json)>") for line in outputs)
-    # ensure persisted
-    stored = app.ideation_store.load_draft(profile.slug)
-    assert stored is not None
-    assert stored.title == "Neon Signal"

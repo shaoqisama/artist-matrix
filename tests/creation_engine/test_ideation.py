@@ -14,7 +14,12 @@ from artist_matrix.state import ArtistMatrixSettings
 def test_save_and_load_draft(tmp_path: Path) -> None:
     settings = ArtistMatrixSettings(data_root=tmp_path)
     store = TrackIdeationStore(settings)
-    draft = TrackIdeationDraft(persona_slug="neon-wasteland", title="Signal Burn", prompt="Neon city")
+    draft = TrackIdeationDraft(
+        persona_slug="neon-wasteland",
+        title="Signal Burn",
+        style="Glitch pop",
+        tags=("neon", "pulse"),
+    )
 
     path = store.save_draft(draft)
     assert path.exists()
@@ -22,7 +27,8 @@ def test_save_and_load_draft(tmp_path: Path) -> None:
     loaded = store.load_draft("neon-wasteland")
     assert loaded is not None
     assert loaded.title == "Signal Burn"
-    assert loaded.prompt == "Neon city"
+    assert loaded.style == "Glitch pop"
+    assert tuple(loaded.tags) == ("neon", "pulse")
 
 
 def test_transcript_roundtrip(tmp_path: Path) -> None:
@@ -41,18 +47,51 @@ def test_transcript_roundtrip(tmp_path: Path) -> None:
     assert replay[1].content == "Let's make a track"
 
 
-def test_apply_llm_guidance_appends_notes() -> None:
+def test_apply_llm_guidance_parses_json_block() -> None:
     class DummyLLM:
         def chat(self, persona_summary: str, prompt: str, transcript):
             assert "Neon" in persona_summary
+            return """
+{
+  "title": "Signal Bloom",
+  "tags": ["neon", "bloom"],
+  "lyrics": "shimmering skyline"
+}
+"""
+
+    draft = TrackIdeationDraft(persona_slug="neon-wasteland", title="Signal Burn")
+    turns = [ChatTurn(role="user", content="Add more energy.")]
+
+    response, suggestions, payload = apply_llm_guidance(
+        DummyLLM(),
+        "Neon Wasteland persona",
+        "Add more energy.",
+        turns,
+        draft,
+    )
+
+    assert response is not None
+    assert suggestions["title"] == "Signal Bloom"
+    assert suggestions["lyrics"] == "shimmering skyline"
+    assert payload is not None
+
+
+def test_apply_llm_guidance_handles_plain_text() -> None:
+    class DummyLLM:
+        def chat(self, persona_summary: str, prompt: str, transcript):
             return "Consider layering retro arps."
 
     draft = TrackIdeationDraft(persona_slug="neon-wasteland", title="Signal Burn")
     turns = [ChatTurn(role="user", content="Add more energy.")]
 
-    response, updated, payload = apply_llm_guidance(DummyLLM(), "Neon Wasteland persona", "Add more energy.", turns, draft)
+    response, suggestions, payload = apply_llm_guidance(
+        DummyLLM(),
+        "Neon Wasteland persona",
+        "Add more energy.",
+        turns,
+        draft,
+    )
 
     assert response is not None
-    assert "draft updated" in response.lower()
-    assert any("retro" in note.lower() for note in updated.notes)
+    assert suggestions == {}
     assert payload is None

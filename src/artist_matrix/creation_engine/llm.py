@@ -100,9 +100,9 @@ def apply_llm_guidance(
     user_message: str,
     transcript: Iterable[ChatTurn],
     draft: TrackIdeationDraft,
-) -> tuple[str | None, TrackIdeationDraft]:
+) -> tuple[str | None, TrackIdeationDraft, str | None]:
     if llm is None:
-        return None, draft
+        return None, draft, None
     try:
         response = llm.chat(persona_summary, user_message, transcript)
     except Exception as exc:  # noqa: BLE001
@@ -110,7 +110,7 @@ def apply_llm_guidance(
             "LLM ideation call failed",
             extra={"error": str(exc)},
         )
-        return f"LLM unavailable ({exc})", draft
+        return f"LLM unavailable ({exc})", draft, None
     cleaned = response.strip()
     if cleaned.startswith("```"):
         cleaned = cleaned.strip("`")
@@ -118,10 +118,12 @@ def apply_llm_guidance(
             cleaned = cleaned[4:]
 
     updated_fields: dict[str, object] = {}
+    pretty_json: str | None = None
     try:
         parsed = json.loads(cleaned)
         if isinstance(parsed, dict):
             updated_fields = parsed
+            pretty_json = json.dumps(parsed, indent=2)
     except json.JSONDecodeError:
         logger.debug("LLM response not JSON; falling back to heuristic", extra={"response": response})
         lines = [line.strip().strip(",{}[]") for line in response.replace("**", "").splitlines() if line.strip()]
@@ -140,6 +142,8 @@ def apply_llm_guidance(
                 updated_fields["lyrics"] = normalized.split(":", 1)[1].strip().strip('"')
             elif lowered.startswith("core vibe:"):
                 updated_fields["prompt"] = normalized.split(":", 1)[1].strip().strip('"')
+        if updated_fields:
+            pretty_json = json.dumps(updated_fields, indent=2)
 
     new_notes = list(draft.notes)
     note_entry = updated_fields.get("notes")
@@ -220,7 +224,7 @@ def apply_llm_guidance(
     else:
         display_message = "Draft updated; added notes."
 
-    return display_message, new_draft
+    return display_message, new_draft, pretty_json
 
 
 __all__ = ["TrackIdeationLLM", "apply_llm_guidance"]

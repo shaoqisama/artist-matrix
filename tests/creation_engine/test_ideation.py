@@ -50,8 +50,9 @@ def test_apply_llm_guidance_appends_notes() -> None:
     draft = TrackIdeationDraft(persona_slug="neon-wasteland", title="Signal Burn")
     turns = [ChatTurn(role="user", content="Add more energy.")]
 
-    response, updated = apply_llm_guidance(DummyLLM(), "Neon Wasteland persona", "Add more energy.", turns, draft)
+    response, updated, payload = apply_llm_guidance(DummyLLM(), "Neon Wasteland persona", "Add more energy.", turns, draft)
 
     assert response is not None
     assert "draft updated" in response.lower()
     assert any("retro" in note.lower() for note in updated.notes)
+    assert payload is None

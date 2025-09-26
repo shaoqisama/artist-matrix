@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterator
 
+import json
+
 from artist_matrix.creation_engine import CreationBrief
 from artist_matrix.creation_engine import TrackIdeationDraft
 from artist_matrix.interfaces.production import LyricDraft, TrackArtifact
@@ -45,7 +47,18 @@ class RecordingCreationEngine:
 
 class DummyLLM:
     def chat(self, persona_summary: str, prompt: str, transcript):
-        return f"LLM suggests: {prompt[:20]} with extra synth layers."
+        return json.dumps(
+            {
+                "title": "Neon Signal",
+                "prompt": "A neon skyline ballad",
+                "style": "future funk",
+                "tags": ["neon", "synth"],
+                "negative_tags": [],
+                "instrumental": True,
+                "lyrics": "Verse line",
+                "notes": "Consider arps",
+            }
+        )
 
 
 def test_creation_finalize_flow(monkeypatch, tmp_path: Path) -> None:
@@ -146,9 +159,7 @@ def test_creation_chat_updates_draft(monkeypatch, tmp_path: Path) -> None:
 
     inputs: Iterator[str] = iter(
         [
-            "title: Neon Signal",
-            "tags: neon, synth",
-            "instrumental: yes",
+            "Let's craft a neon skyline ballad",
             "done",
         ]
     )
@@ -169,6 +180,7 @@ def test_creation_chat_updates_draft(monkeypatch, tmp_path: Path) -> None:
     assert draft.title == "Neon Signal"
     assert draft.tags == ("neon", "synth")
     assert draft.instrumental is True
+    assert any(line.startswith("AI (json)>") for line in outputs)
     # ensure persisted
     stored = app.ideation_store.load_draft(profile.slug)
     assert stored is not None

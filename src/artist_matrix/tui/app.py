@@ -712,8 +712,9 @@ class TuiApp:
             self.session.track_draft = draft
             persona_summary = self._persona_summary(profile)
             llm_response = None
+            llm_json: str | None = None
             if updated == "notes" or (updated is None and self.ideation_llm is not None):
-                llm_response, draft = apply_llm_guidance(
+                llm_response, draft, llm_json = apply_llm_guidance(
                     self.ideation_llm,
                     persona_summary,
                     user_input,
@@ -736,6 +737,9 @@ class TuiApp:
             session_turns.append(reply)
             self.output(f"AI> {response}")
             self._log_event("assistant", f"chat_output:{response}")
+            if llm_json:
+                self.output(f"AI (json)> {llm_json}")
+                self._log_event("assistant", f"chat_json:{llm_json}")
 
         self.session.transcript = transcript
         try:

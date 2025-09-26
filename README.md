@@ -34,6 +34,7 @@ Current implementation includes:
 - Creation Engine now invokes provider-backed audio (`stub` or `suno`) directly from the TUI, persisting track manifests and surfacing artifact paths on completion.
 - Suno integration downloads every returned take, saving alternates alongside the primary track and noting them in the manifest/log summary.
 - "Creation Workbench" adds a persona-aware chat loop and editable draft so you can shape Suno prompts (with revisions saved to `data/artists/<slug>/drafts/`). Configure DeepSeek keys to get AI suggestions; otherwise a local heuristic responds. Use "Finalize draft" to preview the Suno payload before rendering. Adjust the LLM system prompt under `prompts/creation/ideation_system.md` if you want different JSON fields.
+- Set `ARTIST_MATRIX_TUI_LOG_DIR=./logs/tui` (or another path) to capture each console session as JSONL for debugging/replay.
 - Track production with lyric/audio/artwork orchestration (Creation Engine).
 - Social amplification planning and analytics stubs (Echo Chamber).
 - Distribution pipeline integration and release manifests (World Stage).

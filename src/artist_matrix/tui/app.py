@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable
-
-import logging
 
 from artist_matrix.interfaces.creative import AvatarBlueprint
 from artist_matrix.soul_forge import (
@@ -22,21 +21,22 @@ from artist_matrix.creation_engine import (
     ChatTurn,
     CreationBrief,
     CreationEngineService,
+    SunoPayloadPreview,
     TrackIdeationDraft,
     TrackIdeationLLM,
     TrackIdeationStore,
     TrackManifestRepository,
-    SunoPayloadPreview,
-    build_suno_preview,
     apply_llm_guidance,
     build_audio_generator,
     build_lyric_generator,
+    build_suno_preview,
 )
 from artist_matrix.creation_engine.service import ArtworkJobSpec, TrackJobSpec
 from artist_matrix.interfaces.production import LyricDraft, TrackArtifact
 from artist_matrix.echo_chamber import SocialCampaign
 from artist_matrix.state import ArtistMatrixSettings
 from pydantic import ValidationError
+from artist_matrix.tui.logging import SessionLogger
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _ASSET_DIR = _PROJECT_ROOT / "assets" / "tui"
@@ -143,7 +143,7 @@ class TuiApp:
         self.ideation_store = TrackIdeationStore(self.settings)
         self.ideation_llm = TrackIdeationLLM.build(self.settings)
         self.session = session or SessionState()
-        self.llm_client: TrackIdeationLLM | None = None
+        self._session_logger: SessionLogger | None = None
 
     def build_main_menu(self) -> str:
         palette = self.assets.palette()
@@ -167,22 +167,31 @@ class TuiApp:
         return "\n".join(menu_lines)
 
     def run(self) -> None:
-        while True:
-            self.output(self.build_main_menu())
-            choice = self._input("Select mode (1/2/Q): ").strip().lower()
-            if choice in {"1", "g", "generate"}:
-                self.handle_generate()
-            elif choice in {"2", "s", "select"}:
-                self.handle_select()
-            elif choice in {"3", "c", "creation"}:
-                self.handle_creation_menu()
-            elif choice in {"4", "e", "echo"}:
-                self.handle_echo_chamber()
-            elif choice in {"q", "quit", "exit"}:
-                self.output("Shutting down Artist Matrix shell. See you in the wasteland.")
-                break
-            else:
-                self.output("Invalid selection. Enter 1, 2, or Q to exit.")
+        self._open_session_log()
+        try:
+            while True:
+                self.output(self.build_main_menu())
+                choice = self._input("Select mode (1/2/Q): ").strip().lower()
+                self._log_event("user", choice)
+                if choice in {"1", "g", "generate"}:
+                    self.handle_generate()
+                elif choice in {"2", "s", "select"}:
+                    self.handle_select()
+                elif choice in {"3", "c", "creation"}:
+                    self.handle_creation_menu()
+                elif choice in {"4", "e", "echo"}:
+                    self.handle_echo_chamber()
+                elif choice in {"q", "quit", "exit"}:
+                    self.output("Shutting down Artist Matrix shell. See you in the wasteland.")
+                    self._log_event("assistant", "session_exit")
+                    break
+                else:
+                    self.output("Invalid selection. Enter 1, 2, or Q to exit.")
+        finally:
+            log_path = self._session_logger.path if self._session_logger else None
+            self._close_session_log()
+            if log_path:
+                self.output(f"Session log saved to {log_path}")
 
     def handle_generate(self) -> None:
         self.output("\n>> Soul Forge // Persona constructor engaged")
@@ -270,6 +279,7 @@ class TuiApp:
         if draft.safety_notes:
             summary.append(f" → Safety notes : {draft.safety_notes}")
         self.output("\n".join(summary))
+        self._log_event("assistant", "creation_engine_complete")
         self._post_persona_prompt()
 
     def handle_select(self) -> None:
@@ -514,6 +524,7 @@ class TuiApp:
         selection = self._input(
             f"Generate track via provider '{provider}'? [y/N]: "
         ).strip().lower()
+        self._log_event("user", f"creation_engine_confirm:{selection}")
         if selection not in {"y", "yes"}:
             self.output(" Creation cancelled; returning to main menu.")
             return
@@ -608,6 +619,7 @@ class TuiApp:
                 else:
                     self.output(f" [{key}] {label}")
             selection = self._input("Select action: ").strip().lower()
+            self._log_event("user", f"creation_menu:{selection}")
             if selection in {"b", "back", "exit", ""}:
                 return
             entry = options.get(selection)
@@ -631,6 +643,29 @@ class TuiApp:
             )
             self.session.track_draft = draft
         return draft
+
+    def _open_session_log(self) -> None:
+        if self.settings.tui_log_dir is None:
+            return
+        try:
+            self._session_logger = SessionLogger(self.settings.tui_log_dir)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Unable to open session log", extra={"error": str(exc)})
+            self._session_logger = None
+
+    def _close_session_log(self) -> None:
+        if self._session_logger is None:
+            return
+        self._session_logger.close()
+        self._session_logger = None
+
+    def _log_event(self, role: str, message: str) -> None:
+        if self._session_logger is None:
+            return
+        try:
+            self._session_logger.write_event(role=role, message=message)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Failed to write session log", extra={"error": str(exc)})
 
     def handle_creation_chat(self) -> None:
         profile = self.session.last_profile
@@ -656,8 +691,10 @@ class TuiApp:
             lowered = user_input.lower()
             if lowered in {"quit", "cancel"}:
                 self.output(" Chat cancelled; no changes committed.")
+                self._log_event("user", "chat:cancel")
                 return
             if lowered in {"done", "finish", "d"}:
+                self._log_event("user", "chat:done")
                 break
             if lowered == "help":
                 self.output(
@@ -665,8 +702,10 @@ class TuiApp:
                     " model, lyrics, vocal, notes, style_weight, weirdness, audio_weight."
                     " Any other text is saved as a note."
                 )
+                self._log_event("assistant", "chat:help")
                 continue
 
+            self._log_event("user", f"chat_input:{user_input}")
             transcript.append(ChatTurn(role="user", content=user_input))
             session_turns.append(ChatTurn(role="user", content=user_input))
             updated, draft = self._apply_draft_command(draft, user_input)
@@ -696,6 +735,7 @@ class TuiApp:
             transcript.append(reply)
             session_turns.append(reply)
             self.output(f"AI> {response}")
+            self._log_event("assistant", f"chat_output:{response}")
 
         self.session.transcript = transcript
         try:
@@ -724,6 +764,7 @@ class TuiApp:
                 " 'reset', or 'back' to exit."
             )
             choice = self._input("draft> ").strip()
+            self._log_event("user", f"draft_review:{choice}")
             if not choice:
                 continue
             lowered = choice.lower()
@@ -777,6 +818,7 @@ class TuiApp:
                 " Options: [e]dit field / [s]ave / [r]ender / [b]ack"
             )
             choice = self._input("finalize> ").strip().lower()
+            self._log_event("user", f"finalize:{choice}")
             if choice in {"b", "back", "exit", ""}:
                 return
             if choice in {"r", "render"}:

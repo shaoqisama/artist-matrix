@@ -47,6 +47,7 @@ def test_creation_workbench_end_to_end(tmp_path: Path) -> None:
         "ARTIST_MATRIX_PERSONA_PROVIDER": "stub",
         "ARTIST_MATRIX_CREATION_AUDIO_PROVIDER": "stub",
         "ARTIST_MATRIX_PERSONA_LOG_DIR": str(tmp_path / "logs"),
+        "ARTIST_MATRIX_TUI_LOG_DIR": str(tmp_path / "logs" / "tui"),
     }
 
     commands = [
@@ -74,12 +75,17 @@ def test_creation_workbench_end_to_end(tmp_path: Path) -> None:
     code, output = _run_tui(commands, env)
     assert code == 0, output
     assert "Final draft saved" in output
+    assert "Session log saved to" in output
     assert "Creation Engine complete" in output
 
     final_path = data_root / "artists" / "neon-wasteland" / "drafts" / "final_brief.json"
     manifest_path = data_root / "artists" / "neon-wasteland" / "tracks" / "solar-ache.json"
     assert final_path.exists()
     assert manifest_path.exists()
+
+    log_dir = tmp_path / "logs" / "tui"
+    logs = list(log_dir.glob("session_*.jsonl"))
+    assert logs
 
     final_data = json.loads(final_path.read_text(encoding="utf-8"))
     assert final_data["title"] == "Solar Ache"

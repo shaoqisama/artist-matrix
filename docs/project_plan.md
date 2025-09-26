@@ -109,3 +109,8 @@
 - [x] Build a high-level integration harness that drives the TUI with scripted inputs (e.g., `expect`/pty-based runner) covering persona creation, ideation, finalize, and Suno render, using environment toggles to mock external calls.
 - [ ] Add fixture scripts for persona + Suno connectors so we can replay collaborative sessions without hitting real APIs; parameterize to optionally hit live services when credentials are present.
 - [ ] Integrate the harness into CI (`uv run make verify-e2e`) and document local usage for contributors who want to smoke-test the full experience without manual input.
+
+## Milestone 19: TUI Interaction Logging & Analytics
+- [x] Add configurable session logging for the TUI (input/output transcript) that redacts sensitive values and stores JSON lines under `logs/tui/<timestamp>.jsonl`.
+- [x] Surface log file paths to the user after each session and document retrieval/rotation guidance in README + docs/agents.
+- [ ] Extend e2e tests to assert log emission and add a CI-friendly toggle to disable logging when not needed.

@@ -28,6 +28,7 @@
 - Use `ARTIST_MATRIX_DATA_ROOT` to relocate manifest and artifact directories when deploying to cloud storage.
 - To enable the ideation LLM, set `ARTIST_MATRIX_PERSONA_PROVIDER=deepseek`, supply `ARTIST_MATRIX_PERSONA_API_KEY`, and optionally `ARTIST_MATRIX_PERSONA_LOG_DIR` for request/response capture.
 - Finalized briefs are persisted to `data/artists/<slug>/drafts/final_brief.json`; the TUI will load these on subsequent sessions.
+- Set `ARTIST_MATRIX_TUI_LOG_DIR` to capture interactive session logs under `logs/tui/*.jsonl` (useful for troubleshooting or replaying chats).
 
 ## Testing
 - Unit tests: `tests/creation_engine/test_service.py` verifies artifact metadata and manifest content.

@@ -134,10 +134,28 @@
 
 ## Milestone 21: Workbench Polish & Guardrails
 - [ ] Diff preview before adopt (side‑by‑side for text fields; key‑level for metadata) to reduce accidental changes.
-- [ ] Missing‑fields coach: after assistant replies, show what’s still needed; include readiness status in `/show`.
+- [ ] Missing‑fields coach: after assistant replies, show what's still needed; include readiness status in `/show`.
 - [ ] Lightweight safety checks (profanity toggle, basic copyright hints) with clear user feedback; non‑blocking unless configured.
 - [ ] Human‑friendly validation errors mapped from Pydantic; keep user in chat on failure with actionable hints.
 - [ ] Telemetry: count adoptions/undos; gate via `ARTIST_MATRIX_TUI_LOG_DIR`.
 - [ ] Additional tests for diffs, safety toggles, and error messages.
+
+## Milestone 22: TUI Modernization with Rich Framework
+- [ ] **Setup & Environment**: Create feature branch `feature/rich-tui` and add Rich dependency to `pyproject.toml` with version constraints.
+- [ ] **Parallel Implementation**: Create new module `src/artist_matrix/tui/rich_app.py` alongside existing `app.py` using adapter pattern for compatibility.
+- [ ] **Enhanced Main Menu**: Replace ASCII banner with Rich Panel containing styled art, Table layout for menu options with icons, gradient colors and borders.
+- [ ] **Interactive Wizards**: Convert persona creation to Rich Prompt with validation, Live display for real-time feedback, Columns layout for comparisons.
+- [ ] **Creation Workbench Enhancement**: Implement Rich Console with syntax highlighting for chat, Markdown rendering for AI responses, tabbed interface for draft/chat/preview.
+- [ ] **Visual Theme (Alien: Earth)**: Apply retro-futurist dystopia aesthetic per `docs/tui_visual_guide.md`:
+  - Color palette: Acid green (#00FF7F) for warnings/active text, Electric blue (#1E90FF) for system info, Rust/gray for borders
+  - ASCII art: Xenomorph silhouettes, Weyland-Yutani [WY] tags, hazard stripes (██░░██), radar blips (* . *)
+  - Typography: Wide-spaced ALIEN-style caps for titles, monospaced green-on-black terminal font
+  - Motion effects: Slow typing reveals, glitch/static bursts, occasional "jump-scare" rapid scrolls
+  - Layout modes: Ship/claustrophobic (dense panels) vs Earth/open (wider spacing)
+  - Atmosphere: Interface feels "alive but unstable" with eerie neon highlights on dark backgrounds
+- [ ] **Feature Flag System**: Environment variable toggle `ARTIST_MATRIX_TUI_MODE=rich|classic` with backward compatibility maintained.
+- [ ] **Testing Strategy**: Keep existing tests for classic mode, create parallel test suite for Rich implementation, snapshot testing for visual components.
+- [ ] **Documentation & Migration**: Update CLAUDE.md and README with screenshots of both modes, gradual rollout plan with Rich as opt-in initially.
+- [ ] **Safety & Rollback**: Maintain all existing interfaces and data structures, comprehensive test coverage, rollback capability via environment variable.
 
  

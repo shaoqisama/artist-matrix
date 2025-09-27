@@ -14,8 +14,6 @@ from rich.text import Text
 from rich.style import Style
 from rich.live import Live
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.prompt import Prompt, Confirm
-from rich.markdown import Markdown
 
 from artist_matrix.state import ArtistMatrixSettings
 

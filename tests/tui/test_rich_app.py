@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import patch, MagicMock
-from io import StringIO
+from unittest.mock import patch
 
 from artist_matrix.tui.rich_app import RichTuiApp, AlienTheme
 from artist_matrix.state import ArtistMatrixSettings

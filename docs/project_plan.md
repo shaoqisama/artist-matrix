@@ -170,15 +170,15 @@
 - [x] **Documentation**: Update CLAUDE.md with Rich-specific usage, add screenshots, document both modes thoroughly.
 - [x] **End-to-End User Flow Testing**: Create comprehensive integration tests in `tests/tui/test_rich_user_flows.py` that simulate complete user journeys (persona creation → selection → workbench → echo chamber) with mocked inputs and verify all UI flows work without crashes or missing methods.
 
-## Milestone 24: Test Performance & Warning Cleanup
+## Milestone 24: Test Performance & Warning Cleanup ✅ COMPLETED
 - [x] **LLM Test Optimization**: Replace real API calls with MockTrackIdeationLLM for 99%+ speed improvement (20s → 0.14s).
 - [x] **User Flow Test Stabilization**: Fix hanging tests caused by insufficient input sequences and incorrect quit commands.
 - [x] **Test Infrastructure Enhancement**: Add integration test markers, comprehensive error handling tests, and mock service framework.
-- [ ] **DateTime Deprecation Warnings**: Replace all `datetime.utcnow()` calls with `datetime.now(timezone.utc)` for Python 3.12+ compatibility.
-- [ ] **Rich Library Warnings**: Configure or suppress "install ipywidgets" warnings in test configuration.
-- [ ] **Pydantic Deprecation Warnings**: Address or suppress Pydantic internal datetime warnings through configuration.
-- [ ] **Warning Suppression Strategy**: Add pytest filterwarnings configuration for development vs CI environments.
-- [ ] **Clean Test Output**: Achieve zero warnings in test output for better debugging and issue visibility.
+- [x] **DateTime Deprecation Warnings**: Replace all `datetime.utcnow()` calls with `datetime.now(timezone.utc)` for Python 3.12+ compatibility.
+- [x] **Rich Library Warnings**: Configure or suppress "install ipywidgets" warnings in test configuration.
+- [x] **Pydantic Deprecation Warnings**: Address or suppress Pydantic internal datetime warnings through configuration.
+- [x] **Warning Suppression Strategy**: Add pytest filterwarnings configuration for development vs CI environments.
+- [x] **Clean Test Output**: Achieve zero warnings in test output for better debugging and issue visibility.
 
 ### Implementation Details for Milestone 24
 

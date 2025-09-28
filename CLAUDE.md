@@ -96,3 +96,5 @@ Artist Matrix is a terminal-forward agent framework for AI music persona creatio
 - Type hints required (mypy strict mode)
 - Imports organized by ruff standards
 - Keep agent modules focused on single responsibilities
+- writing test using pytest, not using bash script
+- you can utilize @Makefile for each task testing

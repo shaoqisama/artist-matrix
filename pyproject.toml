@@ -39,6 +39,9 @@ line-ending = "lf"
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "integration: marks tests as integration tests that require external services"
+]
 
 [tool.mypy]
 python_version = "3.11"

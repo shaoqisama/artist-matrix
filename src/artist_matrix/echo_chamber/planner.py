@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Iterator, Sequence
 
 from artist_matrix.soul_forge import ArtistProfile
@@ -23,7 +23,7 @@ class CampaignPlanner:
     """Generates scheduled content plans for campaigns."""
 
     def __init__(self, *, clock: Callable[[], datetime] | None = None) -> None:
-        self._clock = clock or datetime.utcnow
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
 
     def plan(
         self,

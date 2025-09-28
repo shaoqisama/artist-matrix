@@ -42,6 +42,13 @@ addopts = "-ra"
 markers = [
     "integration: marks tests as integration tests that require external services"
 ]
+filterwarnings = [
+    # Suppress external library warnings that we can't control
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::UserWarning:rich.live",
+    # Allow our own deprecation warnings to show (for datetime fixes we just made)
+    "default::DeprecationWarning:artist_matrix.*"
+]
 
 [tool.mypy]
 python_version = "3.11"

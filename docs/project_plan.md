@@ -170,4 +170,38 @@
 - [x] **Documentation**: Update CLAUDE.md with Rich-specific usage, add screenshots, document both modes thoroughly.
 - [x] **End-to-End User Flow Testing**: Create comprehensive integration tests in `tests/tui/test_rich_user_flows.py` that simulate complete user journeys (persona creation → selection → workbench → echo chamber) with mocked inputs and verify all UI flows work without crashes or missing methods.
 
+## Milestone 24: Test Performance & Warning Cleanup
+- [x] **LLM Test Optimization**: Replace real API calls with MockTrackIdeationLLM for 99%+ speed improvement (20s → 0.14s).
+- [x] **User Flow Test Stabilization**: Fix hanging tests caused by insufficient input sequences and incorrect quit commands.
+- [x] **Test Infrastructure Enhancement**: Add integration test markers, comprehensive error handling tests, and mock service framework.
+- [ ] **DateTime Deprecation Warnings**: Replace all `datetime.utcnow()` calls with `datetime.now(timezone.utc)` for Python 3.12+ compatibility.
+- [ ] **Rich Library Warnings**: Configure or suppress "install ipywidgets" warnings in test configuration.
+- [ ] **Pydantic Deprecation Warnings**: Address or suppress Pydantic internal datetime warnings through configuration.
+- [ ] **Warning Suppression Strategy**: Add pytest filterwarnings configuration for development vs CI environments.
+- [ ] **Clean Test Output**: Achieve zero warnings in test output for better debugging and issue visibility.
+
+### Implementation Details for Milestone 24
+
+#### Phase 1: DateTime Modernization (High Priority)
+- **Files to update**: 6 source files using `datetime.utcnow()`
+  - `src/artist_matrix/creation_engine/ideation.py:62`
+  - `src/artist_matrix/soul_forge/profiles.py:77`
+  - `src/artist_matrix/creation_engine/llm.py:55`
+  - `src/artist_matrix/creation_engine/connectors.py:367`
+  - `src/artist_matrix/tui/logging.py:18, 24`
+  - `src/artist_matrix/echo_chamber/planner.py:35`
+- **Pattern**: Replace `datetime.utcnow()` → `datetime.now(timezone.utc)`
+- **Import additions**: Add `timezone` import where needed
+- **Impact**: Future-proof code and eliminate ~80 deprecation warnings
+
+#### Phase 2: Test Configuration (Medium Priority)
+- **Warning filters**: Add pytest configuration to suppress external library warnings
+- **Environment toggles**: Different warning levels for development vs CI
+- **Documentation**: Update contribution guidelines for warning-free development
+
+#### Phase 3: Validation (Low Priority)
+- **Verification**: Ensure `uv run make verify` produces zero warnings
+- **Performance**: Maintain optimized test performance (sub-second LLM tests)
+- **Compatibility**: Verify datetime changes don't break existing functionality
+
  

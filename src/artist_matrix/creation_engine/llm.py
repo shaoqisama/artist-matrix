@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -52,7 +52,7 @@ class TrackIdeationLLM:
         content = data["choices"][0]["message"]["content"].strip()
         if self.log_dir is not None:
             self.log_dir.mkdir(parents=True, exist_ok=True)
-            timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             path = self.log_dir / f"ideation_{timestamp}.json"
             path.write_text(json.dumps({"request": payload, "response": data}, indent=2), encoding="utf-8")
         return content

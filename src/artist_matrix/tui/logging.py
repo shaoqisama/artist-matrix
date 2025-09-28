@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 logger = logging.getLogger(__name__)
 
@@ -15,13 +15,13 @@ class SessionLogger:
     def __init__(self, log_dir: Path) -> None:
         self.log_dir = log_dir
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         self.path = self.log_dir / f"session_{timestamp}.jsonl"
         self._handle = self.path.open("a", encoding="utf-8")
 
     def write_event(self, *, role: str, message: str) -> None:
         payload = {
-            "ts": datetime.utcnow().isoformat(timespec="seconds"),
+            "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "role": role,
             "message": self._redact(message),
         }

@@ -4,7 +4,7 @@ Use this playbook as the quick-start reference before working on the repo. It mi
 
 ## Project Structure
 - Source lives in `src/artist_matrix/`:
-  - `tui/` – interactive shell, assets, session logging helpers.
+  - `tui/` – dual-mode interactive shell (classic + Rich with Alien: Earth theming), assets, session logging helpers.
   - `creation_engine/` – ideation chat, Suno integration, finalize workflow.
   - `soul_forge/` – persona connectors (DeepSeek, stubs) and schema validation.
   - `echo_chamber/`, `world_stage/`, `state/`, `interfaces/` – downstream agents and shared models.
@@ -14,7 +14,7 @@ Use this playbook as the quick-start reference before working on the repo. It mi
 ## Tooling & Environment
 - Create a virtualenv with `uv venv --python 3.12 .venv` and install dependencies via `uv sync --all-extras`.
 - Run `uv run make verify` (ruff + mypy + pytest + e2e) before every commit.
-- Key env vars (`.env`) include persona (`ARTIST_MATRIX_PERSONA_PROVIDER/MODEL/API_KEY/ENDPOINT/LOG_DIR`), avatar (`ARTIST_MATRIX_AVATAR_*`), audio (`ARTIST_MATRIX_CREATION_AUDIO_*`), and optional TUI logging (`ARTIST_MATRIX_TUI_LOG_DIR` – defaults to `logs/tui`). Copy `.env.example` and adjust per provider.
+- Key env vars (`.env`) include persona (`ARTIST_MATRIX_PERSONA_PROVIDER/MODEL/API_KEY/ENDPOINT/LOG_DIR`), avatar (`ARTIST_MATRIX_AVATAR_*`), audio (`ARTIST_MATRIX_CREATION_AUDIO_*`), TUI mode (`ARTIST_MATRIX_TUI_MODE=classic|rich`), and optional TUI logging (`ARTIST_MATRIX_TUI_LOG_DIR` – defaults to `logs/tui`). Copy `.env.example` and adjust per provider.
 
 ## Architecture Overview
 - **Soul Forge** collects persona requirements, calls DeepSeek via `LLMTemplatePersonaGenerator`, normalizes responses, and persists `data/artists/<slug>.json` manifests.
@@ -26,6 +26,7 @@ Use this playbook as the quick-start reference before working on the repo. It mi
 - Logging hooks (persona, Suno, TUI) provide JSONL transcripts for debugging and replay.
 
 ## TUI Workflows
+- **Interface Modes**: Classic mode (original terminal UI) or Rich mode (enhanced visuals with Alien: Earth theme - feature branch)
 - Main menu offers: `[1] Generate Avatar`, `[2] Select Avatar`, `[3] Creation Workbench`, `[4] Launch Echo`, `[Q] Quit`.
 - "Generate" runs the multi-step wizard (back/edit/refine). After forging, jump directly into the workbench or echo flows.
 - "Select" enumerates `data/artists/*.json`, previews manifests, and loads the chosen persona into session state.

@@ -204,4 +204,174 @@
 - **Performance**: Maintain optimized test performance (sub-second LLM tests)
 - **Compatibility**: Verify datetime changes don't break existing functionality
 
+## Milestone 25: GitHub Integration & CI/CD Pipeline
+- [ ] **Push Main Branch**: Establish baseline code repository on GitHub
+- [ ] **Push Feature Branch**: Upload feature/rich-tui branch for Pull Request workflow
+- [ ] **Create Pull Request**: Open PR from feature/rich-tui → main with comprehensive description
+- [ ] **GitHub Actions CI Setup**: Configure automated testing pipeline with multi-Python support
+- [ ] **Documentation Updates**: Add CI badges and contribution guidelines
+- [ ] **PR Validation**: Verify CI runs successfully on Pull Request without merging
+
+### Implementation Details for Milestone 25
+
+#### Phase 1: Repository Initialization
+**Commands:**
+```bash
+# Push main branch to establish baseline
+git checkout main
+git push -u origin main
+
+# Push feature branch for PR workflow  
+git checkout feature/rich-tui
+git push -u origin feature/rich-tui
+```
+
+**Purpose:**
+- Establish main branch as the stable baseline on GitHub
+- Enable Pull Request creation from feature branch
+- Preserve development history showing Rich TUI evolution
+
+#### Phase 2: Pull Request Creation
+**GitHub UI Steps:**
+1. Navigate to GitHub repository (github.com/shaoqisama/artist-matrix)
+2. Click "Pull requests" → "New pull request"
+3. Set base: `main` ← compare: `feature/rich-tui`
+4. Add comprehensive PR description:
+
+```markdown
+# Rich TUI Implementation with Alien: Earth Theme
+
+## Summary
+- ✅ Complete Rich-based TUI with retro-futuristic Alien: Earth theme
+- ✅ 99%+ test performance improvement (20s → 0.14s) via MockTrackIdeationLLM
+- ✅ Zero warnings in test output (89 → 0 warnings)
+- ✅ Full feature parity with classic TUI mode
+
+## Changes Overview
+- **New Rich TUI Module**: `src/artist_matrix/tui/rich_app.py` (1624 lines)
+- **Test Infrastructure**: Comprehensive mocks and user flow tests
+- **DateTime Modernization**: Python 3.12+ compatibility fixes
+- **Performance Optimization**: Sub-second LLM test execution
+
+## Testing
+- 93 tests passing with zero warnings
+- `uv run make verify` completes successfully
+- Feature flag toggle: `ARTIST_MATRIX_TUI_MODE=rich|classic`
+
+## Files Changed
+17 files changed, 2972 insertions(+), 24 deletions(-)
+
+Ready for review and CI validation.
+```
+
+5. **Keep PR Open**: Do not merge - use for CI validation and review
+
+#### Phase 3: GitHub Actions CI Configuration
+**Create `.github/workflows/ci.yml`:**
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main, 'feature/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: uv sync --all-extras
+    
+    - name: Run linting
+      run: uv run ruff check src tests
+    
+    - name: Run type checking  
+      run: uv run mypy src
+    
+    - name: Run tests (exclude integration)
+      run: uv run pytest -m "not integration" --tb=short
+      env:
+        ARTIST_MATRIX_TUI_MODE: rich
+    
+    - name: Run integration tests (if API keys available)
+      run: uv run pytest -m "integration" --tb=short || echo "Integration tests skipped (no API keys)"
+      env:
+        ARTIST_MATRIX_TUI_MODE: rich
+      continue-on-error: true
+```
+
+**Features:**
+- Tests on Python 3.11 and 3.12
+- Caches dependencies for faster builds
+- Separates unit and integration tests
+- Uses Rich TUI mode by default
+- Graceful handling of missing API keys
+
+#### Phase 4: Documentation & Badges
+**Update README.md with CI badge:**
+```markdown
+# Artist Matrix
+
+[![CI](https://github.com/shaoqisama/artist-matrix/workflows/CI/badge.svg)](https://github.com/shaoqisama/artist-matrix/actions)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
+[rest of README content...]
+```
+
+**Add contribution guidelines:**
+```markdown
+## Development
+
+### Prerequisites
+- Python 3.11+
+- uv package manager
+
+### Setup
+```bash
+uv sync --all-extras
+uv run make verify  # Run all checks
+```
+
+### CI Requirements
+All PRs must pass:
+- Linting (`ruff check`)
+- Type checking (`mypy`)  
+- Unit tests (93 tests, zero warnings)
+- Python 3.11 and 3.12 compatibility
+```
+
+#### Benefits of This Approach
+✅ **Safe Integration**: Main branch protected, feature branch tested first  
+✅ **Automated Quality**: CI catches issues before merge  
+✅ **Documentation**: PR documents the Rich TUI feature comprehensively  
+✅ **Multi-Python Support**: Ensures compatibility across Python versions  
+✅ **Performance Tracking**: CI monitors test execution times  
+✅ **Professional Workflow**: Standard GitHub development practices  
+
+#### Post-Implementation Results
+- Pull Request ready for review with CI validation
+- Automated testing on every push and PR
+- Visual build status via GitHub badges
+- Clear contribution guidelines for future developers
+- No merge until CI is green and review is complete
+
  

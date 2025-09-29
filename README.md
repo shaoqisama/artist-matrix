@@ -1,5 +1,9 @@
 # Artist Matrix
 
+[![CI](https://github.com/shaoqisama/artist-matrix/workflows/CI/badge.svg)](https://github.com/shaoqisama/artist-matrix/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 Artist Matrix is a terminal-forward agent framework for crafting AI-first music personas and delivering releases across creative, social, and distribution channels.
 
 ## Getting Started

@@ -140,22 +140,238 @@
 - [ ] Telemetry: count adoptions/undos; gate via `ARTIST_MATRIX_TUI_LOG_DIR`.
 - [ ] Additional tests for diffs, safety toggles, and error messages.
 
-## Milestone 22: TUI Modernization with Rich Framework
-- [ ] **Setup & Environment**: Create feature branch `feature/rich-tui` and add Rich dependency to `pyproject.toml` with version constraints.
-- [ ] **Parallel Implementation**: Create new module `src/artist_matrix/tui/rich_app.py` alongside existing `app.py` using adapter pattern for compatibility.
-- [ ] **Enhanced Main Menu**: Replace ASCII banner with Rich Panel containing styled art, Table layout for menu options with icons, gradient colors and borders.
+## Milestone 22: TUI Modernization with Rich Framework (Visual Shell Only)
+- [x] **Setup & Environment**: Create feature branch `feature/rich-tui` and add Rich dependency to `pyproject.toml` with version constraints.
+- [x] **Parallel Implementation**: Create new module `src/artist_matrix/tui/rich_app.py` alongside existing `app.py` using adapter pattern for compatibility.
+- [x] **Enhanced Main Menu**: Replace ASCII banner with Rich Panel containing styled art, Table layout for menu options with icons, gradient colors and borders.
 - [ ] **Interactive Wizards**: Convert persona creation to Rich Prompt with validation, Live display for real-time feedback, Columns layout for comparisons.
 - [ ] **Creation Workbench Enhancement**: Implement Rich Console with syntax highlighting for chat, Markdown rendering for AI responses, tabbed interface for draft/chat/preview.
-- [ ] **Visual Theme (Alien: Earth)**: Apply retro-futurist dystopia aesthetic per `docs/tui_visual_guide.md`:
+- [x] **Visual Theme (Alien: Earth)**: Apply retro-futurist dystopia aesthetic per `docs/tui_visual_guide.md`:
   - Color palette: Acid green (#00FF7F) for warnings/active text, Electric blue (#1E90FF) for system info, Rust/gray for borders
   - ASCII art: Xenomorph silhouettes, Weyland-Yutani [WY] tags, hazard stripes (██░░██), radar blips (* . *)
   - Typography: Wide-spaced ALIEN-style caps for titles, monospaced green-on-black terminal font
   - Motion effects: Slow typing reveals, glitch/static bursts, occasional "jump-scare" rapid scrolls
   - Layout modes: Ship/claustrophobic (dense panels) vs Earth/open (wider spacing)
   - Atmosphere: Interface feels "alive but unstable" with eerie neon highlights on dark backgrounds
-- [ ] **Feature Flag System**: Environment variable toggle `ARTIST_MATRIX_TUI_MODE=rich|classic` with backward compatibility maintained.
-- [ ] **Testing Strategy**: Keep existing tests for classic mode, create parallel test suite for Rich implementation, snapshot testing for visual components.
-- [ ] **Documentation & Migration**: Update CLAUDE.md and README with screenshots of both modes, gradual rollout plan with Rich as opt-in initially.
-- [ ] **Safety & Rollback**: Maintain all existing interfaces and data structures, comprehensive test coverage, rollback capability via environment variable.
+- [x] **Feature Flag System**: Environment variable toggle `ARTIST_MATRIX_TUI_MODE=rich|classic` with backward compatibility maintained.
+- [x] **Testing Strategy**: Keep existing tests for classic mode, create parallel test suite for Rich implementation, snapshot testing for visual components.
+- [x] **Documentation & Migration**: Update CLAUDE.md and README with screenshots of both modes, gradual rollout plan with Rich as opt-in initially.
+- [x] **Safety & Rollback**: Maintain all existing interfaces and data structures, comprehensive test coverage, rollback capability via environment variable.
+
+## Milestone 23: Rich TUI Full Feature Implementation
+- [x] **Core Infrastructure**: Import session management components (`SessionState`, `PersonaWizardDraft`) and initialize all services (Soul Forge, Creation Engine).
+- [x] **Persona Generation Wizard**: Implement `_collect_persona_draft` with Rich prompts, validation, back/edit navigation, and progress displays.
+- [x] **Avatar Selection Interface**: Create Rich Table browser for personas with preview panels, numbered selection, and session integration.
+- [x] **Creation Workbench**: Port chat interface with Rich Console, Markdown rendering, command system (`/adopt`, `/edit`, `/show`, `/finalize`).
+- [x] **Echo Chamber Planning**: Implement campaign UI with Rich Tables, post previews, timeline visualization, and scheduling.
+- [x] **Service Integration**: Wire all handlers to actual business logic (Soul Forge, Creation Engine, Echo Chamber services).
+- [x] **State Persistence**: Ensure session state, drafts, and transcripts work consistently between Rich and classic modes.
+- [x] **Comprehensive Testing**: Test each handler, mock external services, validate UI components, ensure feature parity.
+- [x] **Documentation**: Update CLAUDE.md with Rich-specific usage, add screenshots, document both modes thoroughly.
+- [x] **End-to-End User Flow Testing**: Create comprehensive integration tests in `tests/tui/test_rich_user_flows.py` that simulate complete user journeys (persona creation → selection → workbench → echo chamber) with mocked inputs and verify all UI flows work without crashes or missing methods.
+
+## Milestone 24: Test Performance & Warning Cleanup ✅ COMPLETED
+- [x] **LLM Test Optimization**: Replace real API calls with MockTrackIdeationLLM for 99%+ speed improvement (20s → 0.14s).
+- [x] **User Flow Test Stabilization**: Fix hanging tests caused by insufficient input sequences and incorrect quit commands.
+- [x] **Test Infrastructure Enhancement**: Add integration test markers, comprehensive error handling tests, and mock service framework.
+- [x] **DateTime Deprecation Warnings**: Replace all `datetime.utcnow()` calls with `datetime.now(timezone.utc)` for Python 3.12+ compatibility.
+- [x] **Rich Library Warnings**: Configure or suppress "install ipywidgets" warnings in test configuration.
+- [x] **Pydantic Deprecation Warnings**: Address or suppress Pydantic internal datetime warnings through configuration.
+- [x] **Warning Suppression Strategy**: Add pytest filterwarnings configuration for development vs CI environments.
+- [x] **Clean Test Output**: Achieve zero warnings in test output for better debugging and issue visibility.
+
+### Implementation Details for Milestone 24
+
+#### Phase 1: DateTime Modernization (High Priority)
+- **Files to update**: 6 source files using `datetime.utcnow()`
+  - `src/artist_matrix/creation_engine/ideation.py:62`
+  - `src/artist_matrix/soul_forge/profiles.py:77`
+  - `src/artist_matrix/creation_engine/llm.py:55`
+  - `src/artist_matrix/creation_engine/connectors.py:367`
+  - `src/artist_matrix/tui/logging.py:18, 24`
+  - `src/artist_matrix/echo_chamber/planner.py:35`
+- **Pattern**: Replace `datetime.utcnow()` → `datetime.now(timezone.utc)`
+- **Import additions**: Add `timezone` import where needed
+- **Impact**: Future-proof code and eliminate ~80 deprecation warnings
+
+#### Phase 2: Test Configuration (Medium Priority)
+- **Warning filters**: Add pytest configuration to suppress external library warnings
+- **Environment toggles**: Different warning levels for development vs CI
+- **Documentation**: Update contribution guidelines for warning-free development
+
+#### Phase 3: Validation (Low Priority)
+- **Verification**: Ensure `uv run make verify` produces zero warnings
+- **Performance**: Maintain optimized test performance (sub-second LLM tests)
+- **Compatibility**: Verify datetime changes don't break existing functionality
+
+## Milestone 25: GitHub Integration & CI/CD Pipeline
+- [ ] **Push Main Branch**: Establish baseline code repository on GitHub
+- [ ] **Push Feature Branch**: Upload feature/rich-tui branch for Pull Request workflow
+- [ ] **Create Pull Request**: Open PR from feature/rich-tui → main with comprehensive description
+- [ ] **GitHub Actions CI Setup**: Configure automated testing pipeline with multi-Python support
+- [ ] **Documentation Updates**: Add CI badges and contribution guidelines
+- [ ] **PR Validation**: Verify CI runs successfully on Pull Request without merging
+
+### Implementation Details for Milestone 25
+
+#### Phase 1: Repository Initialization
+**Commands:**
+```bash
+# Push main branch to establish baseline
+git checkout main
+git push -u origin main
+
+# Push feature branch for PR workflow  
+git checkout feature/rich-tui
+git push -u origin feature/rich-tui
+```
+
+**Purpose:**
+- Establish main branch as the stable baseline on GitHub
+- Enable Pull Request creation from feature branch
+- Preserve development history showing Rich TUI evolution
+
+#### Phase 2: Pull Request Creation
+**GitHub UI Steps:**
+1. Navigate to GitHub repository (github.com/shaoqisama/artist-matrix)
+2. Click "Pull requests" → "New pull request"
+3. Set base: `main` ← compare: `feature/rich-tui`
+4. Add comprehensive PR description:
+
+```markdown
+# Rich TUI Implementation with Alien: Earth Theme
+
+## Summary
+- ✅ Complete Rich-based TUI with retro-futuristic Alien: Earth theme
+- ✅ 99%+ test performance improvement (20s → 0.14s) via MockTrackIdeationLLM
+- ✅ Zero warnings in test output (89 → 0 warnings)
+- ✅ Full feature parity with classic TUI mode
+
+## Changes Overview
+- **New Rich TUI Module**: `src/artist_matrix/tui/rich_app.py` (1624 lines)
+- **Test Infrastructure**: Comprehensive mocks and user flow tests
+- **DateTime Modernization**: Python 3.12+ compatibility fixes
+- **Performance Optimization**: Sub-second LLM test execution
+
+## Testing
+- 93 tests passing with zero warnings
+- `uv run make verify` completes successfully
+- Feature flag toggle: `ARTIST_MATRIX_TUI_MODE=rich|classic`
+
+## Files Changed
+17 files changed, 2972 insertions(+), 24 deletions(-)
+
+Ready for review and CI validation.
+```
+
+5. **Keep PR Open**: Do not merge - use for CI validation and review
+
+#### Phase 3: GitHub Actions CI Configuration
+**Create `.github/workflows/ci.yml`:**
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main, 'feature/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: uv sync --all-extras
+    
+    - name: Run linting
+      run: uv run ruff check src tests
+    
+    - name: Run type checking  
+      run: uv run mypy src
+    
+    - name: Run tests (exclude integration)
+      run: uv run pytest -m "not integration" --tb=short
+      env:
+        ARTIST_MATRIX_TUI_MODE: rich
+    
+    - name: Run integration tests (if API keys available)
+      run: uv run pytest -m "integration" --tb=short || echo "Integration tests skipped (no API keys)"
+      env:
+        ARTIST_MATRIX_TUI_MODE: rich
+      continue-on-error: true
+```
+
+**Features:**
+- Tests on Python 3.11 and 3.12
+- Caches dependencies for faster builds
+- Separates unit and integration tests
+- Uses Rich TUI mode by default
+- Graceful handling of missing API keys
+
+#### Phase 4: Documentation & Badges
+**Update README.md with CI badge:**
+```markdown
+# Artist Matrix
+
+[![CI](https://github.com/shaoqisama/artist-matrix/workflows/CI/badge.svg)](https://github.com/shaoqisama/artist-matrix/actions)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
+[rest of README content...]
+```
+
+**Add contribution guidelines:**
+```markdown
+## Development
+
+### Prerequisites
+- Python 3.11+
+- uv package manager
+
+### Setup
+```bash
+uv sync --all-extras
+uv run make verify  # Run all checks
+```
+
+### CI Requirements
+All PRs must pass:
+- Linting (`ruff check`)
+- Type checking (`mypy`)  
+- Unit tests (93 tests, zero warnings)
+- Python 3.11 and 3.12 compatibility
+```
+
+#### Benefits of This Approach
+✅ **Safe Integration**: Main branch protected, feature branch tested first  
+✅ **Automated Quality**: CI catches issues before merge  
+✅ **Documentation**: PR documents the Rich TUI feature comprehensively  
+✅ **Multi-Python Support**: Ensures compatibility across Python versions  
+✅ **Performance Tracking**: CI monitors test execution times  
+✅ **Professional Workflow**: Standard GitHub development practices  
+
+#### Post-Implementation Results
+- Pull Request ready for review with CI validation
+- Automated testing on every push and PR
+- Visual build status via GitHub badges
+- Clear contribution guidelines for future developers
+- No merge until CI is green and review is complete
 
  

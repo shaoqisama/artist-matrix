@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Install dependencies: `uv sync --all-extras` (requires Python 3.12+, uv)
 - Activate environment: `source .venv/bin/activate` or prefix commands with `uv run`
 - Launch TUI: `uv run python -m artist_matrix.tui`
+- Launch Rich TUI (feature branch): `ARTIST_MATRIX_TUI_MODE=rich uv run python -m artist_matrix.tui`
 
 **Quality Checks (run before PRs):**
 - Full verification: `uv run make verify` (lint + type-check + test)
@@ -33,7 +34,7 @@ Artist Matrix is a terminal-forward agent framework for AI music persona creatio
 
 **Shared Infrastructure:**
 - **State Management** (`src/artist_matrix/state/`): Pydantic schemas, settings, job orchestration
-- **TUI Interface** (`src/artist_matrix/tui/`): Terminal interface with session logging
+- **TUI Interface** (`src/artist_matrix/tui/`): Dual-mode terminal interface (classic + Rich) with session logging
 - **Interfaces** (`src/artist_matrix/interfaces/`): Protocol definitions for external integrations
 
 ## Key Data Flow
@@ -48,6 +49,7 @@ Artist Matrix is a terminal-forward agent framework for AI music persona creatio
 **Required Environment Variables:**
 - `ARTIST_MATRIX_PERSONA_PROVIDER/MODEL/API_KEY` - DeepSeek LLM integration
 - `ARTIST_MATRIX_CREATION_AUDIO_PROVIDER/MODEL/API_KEY/BASE_URL` - Suno audio generation
+- `ARTIST_MATRIX_TUI_MODE` - Interface mode (`classic` or `rich`, defaults to `classic`)
 - `ARTIST_MATRIX_TUI_LOG_DIR` - Session logging (defaults to `logs/tui`)
 
 **Optional Logging:**
@@ -70,6 +72,10 @@ Artist Matrix is a terminal-forward agent framework for AI music persona creatio
 - `AGENTS.md` - Detailed development guidelines and architecture
 
 ## TUI Workflow Patterns
+
+**Interface Modes:**
+- **Classic TUI** (`ARTIST_MATRIX_TUI_MODE=classic`): Original terminal interface 
+- **Rich TUI** (`ARTIST_MATRIX_TUI_MODE=rich`): Enhanced interface with Alien: Earth theming, animations, improved visuals (feature branch)
 
 **Creation Workbench Chat Commands:**
 - `/adopt` - Accept AI's structured JSON suggestions into draft
@@ -96,3 +102,5 @@ Artist Matrix is a terminal-forward agent framework for AI music persona creatio
 - Type hints required (mypy strict mode)
 - Imports organized by ruff standards
 - Keep agent modules focused on single responsibilities
+- writing test using pytest, not using bash script
+- you can utilize @Makefile for each task testing

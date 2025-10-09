@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -74,7 +74,7 @@ class ArtistProfile(BaseModel):
             safety_notes=draft.safety_notes,
             visual_palette=tuple(getattr(draft, "visual_palette", ())),
             narrative_tone=getattr(draft, "narrative_tone", None),
-            created_at=created_at or datetime.utcnow(),
+            created_at=created_at or datetime.now(timezone.utc),
             version=version,
         )
 

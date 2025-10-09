@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
@@ -364,7 +364,7 @@ class SunoAudioGenerator(AudioGenerator):
         if self.log_dir is None:
             return
         safe_stage = stage.replace("/", "_").replace(" ", "-")
-        timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         filename = f"suno_{timestamp}_{artist_slug}_{job_id}_{safe_stage}.json"
         path = self.log_dir / filename
         try:

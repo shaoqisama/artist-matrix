@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
@@ -59,7 +59,7 @@ class TrackIdeationDraft(BaseModel):
     }
 
     def update_timestamp(self) -> None:
-        object.__setattr__(self, "updated_at", datetime.utcnow())
+        object.__setattr__(self, "updated_at", datetime.now(timezone.utc))
 
 
 @dataclass(slots=True)

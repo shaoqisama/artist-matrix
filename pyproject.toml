@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.8",
     "pydantic-settings>=2.5",
     "httpx>=0.28",
+    "rich>=13.0",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +20,7 @@ dev = [
     "mypy>=1.10",
     "pytest>=8.2",
     "ruff>=0.5",
+    "pip-audit>=2.6",
 ]
 
 [tool.uv]
@@ -38,6 +40,16 @@ line-ending = "lf"
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "integration: marks tests as integration tests that require external services"
+]
+filterwarnings = [
+    # Suppress external library warnings that we can't control
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::UserWarning:rich.live",
+    # Allow our own deprecation warnings to show (for datetime fixes we just made)
+    "default::DeprecationWarning:artist_matrix.*"
+]
 
 [tool.mypy]
 python_version = "3.11"

@@ -38,6 +38,7 @@ class ArtistMatrixSettings(BaseSettings):
     creation_audio_timeout_seconds: float = Field(default=300.0)
     creation_audio_log_dir: Path | None = Field(default=None)
     tui_log_dir: Path | None = Field(default=_PROJECT_ROOT / "logs" / "tui")
+    tui_mode: str = Field(default="classic")
 
 
 __all__ = ["ArtistMatrixSettings"]

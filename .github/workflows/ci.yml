@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, feature/* ]
+    branches: [ main, feature/*, refactor/* ]
   pull_request:
     branches: [ main ]
 
@@ -21,10 +21,13 @@ jobs:
       run: uv python install 3.12
     
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync --all-extras --frozen --python 3.12
     
     - name: Run linting
       run: uv run make lint
+
+    - name: Check formatting
+      run: uv run make format-check
     
     - name: Run type checking
       run: uv run make type-check
@@ -47,14 +50,13 @@ jobs:
       run: uv python install ${{ matrix.python-version }}
     
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync --all-extras --frozen --python ${{ matrix.python-version }}
     
     - name: Run unit tests
-      run: uv run pytest tests/ -x --disable-warnings -m "not integration"
+      run: uv run pytest tests/ -x --disable-warnings -m "not integration and not external"
     
-    - name: Run integration tests
+    - name: Run deterministic integration tests
       run: uv run pytest tests/ -x --disable-warnings -m "integration"
-      continue-on-error: true  # Allow integration tests to fail (external dependencies)
 
   security:
     runs-on: ubuntu-latest
@@ -70,9 +72,15 @@ jobs:
       run: uv python install 3.12
     
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync --all-extras --frozen --python 3.12
     
-    - name: Run security audit
-      run: uv run pip-audit
-      continue-on-error: true  # Initially allow failures to not block CI
+    - name: Export runtime dependencies
+      run: >-
+        uv export --frozen --no-dev --no-emit-project --no-hashes
+        --output-file "${{ runner.temp }}/artist-matrix-runtime-requirements.txt"
 
+    - name: Run security audit
+      run: >-
+        uv run pip-audit
+        --cache-dir "${{ runner.temp }}/pip-audit-cache"
+        --requirement "${{ runner.temp }}/artist-matrix-runtime-requirements.txt"

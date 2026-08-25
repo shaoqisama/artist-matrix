@@ -69,7 +69,9 @@ class HeuristicLyricGenerator(LyricGenerator):
     ) -> LyricDraft:
         title = spec.title or f"{profile.name} Anthem"
         narrative = spec.narrative or profile.narrative_tone or spec.mood
-        influences = ", ".join(profile.influences) if profile.influences else ", ".join(spec.references)
+        influences = (
+            ", ".join(profile.influences) if profile.influences else ", ".join(spec.references)
+        )
         visual = ", ".join(profile.visual_palette)
         body_lines: list[str] = []
         line_templates = [
@@ -175,7 +177,7 @@ class SunoAudioGenerator(AudioGenerator):
                     output_path
                     if index == 0
                     else output_path.with_name(
-                        f"{output_path.stem}-{index+1}{output_path.suffix}"
+                        f"{output_path.stem}-{index + 1}{output_path.suffix}"
                     )
                 )
                 audio_url = self._extract_audio_url(result_payload)
@@ -244,9 +246,7 @@ class SunoAudioGenerator(AudioGenerator):
             payload = response.json()
             last_payload = payload
             if payload.get("code") != 200:
-                raise RuntimeError(
-                    f"Suno status error {payload.get('code')}: {payload.get('msg')}"
-                )
+                raise RuntimeError(f"Suno status error {payload.get('code')}: {payload.get('msg')}")
             data = payload.get("data")
             if isinstance(data, dict):
                 status = str(data.get("status", "")).upper()
@@ -262,9 +262,7 @@ class SunoAudioGenerator(AudioGenerator):
                     "SENSITIVE_WORD_ERROR",
                 }:
                     error_message = data.get("errorMessage") or payload.get("msg")
-                    raise RuntimeError(
-                        f"Suno generation failed ({status}): {error_message}"
-                    )
+                    raise RuntimeError(f"Suno generation failed ({status}): {error_message}")
             time.sleep(max(self.poll_interval, 0.0))
         raise TimeoutError(
             f"Timed out waiting for Suno generation {job_id}; last payload: {json.dumps(last_payload or {}, indent=2)}"

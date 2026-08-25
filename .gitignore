@@ -10,6 +10,7 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.cache/
 
 # Packaging metadata
 *.egg-info/
@@ -18,6 +19,9 @@ __pycache__/
 .env
 data/artists/
 data/avatars/
+data/actions/
+data/campaigns/
+data/outbox/
 logs/
 
 # macOS metadata

@@ -24,15 +24,13 @@ class SocialClient(Protocol):
 
     platform: str
 
-    def publish(self, post: SocialPost) -> None:
-        ...
+    def publish(self, post: SocialPost) -> None: ...
 
 
 class AnalyticsClient(Protocol):
     """Interface for recording engagement metrics."""
 
-    def record(self, profile: ArtistProfile, post: SocialPost, *, status: str) -> None:
-        ...
+    def record(self, profile: ArtistProfile, post: SocialPost, *, status: str) -> None: ...
 
 
 __all__ = ["SocialPost", "SocialClient", "AnalyticsClient"]

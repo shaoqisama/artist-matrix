@@ -1,106 +1,96 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file gives coding agents a compact project guide. `AGENTS.md` and
+`docs/architecture_codex_native.md` are the authoritative architecture and contribution references.
 
-## Development Commands
+## Development commands
 
-**Setup & Environment:**
-- Install dependencies: `uv sync --all-extras` (requires Python 3.12+, uv)
-- Activate environment: `source .venv/bin/activate` or prefix commands with `uv run`
-- Launch TUI: `uv run python -m artist_matrix.tui`
-- Launch Rich TUI (feature branch): `ARTIST_MATRIX_TUI_MODE=rich uv run python -m artist_matrix.tui`
+```bash
+uv sync --all-extras --frozen
+uv run make verify
+uv run pytest tests/agent_runtime
+```
 
-**Quality Checks (run before PRs):**
-- Full verification: `uv run make verify` (lint + type-check + test)
-- Lint only: `uv run make lint` (ruff check)
-- Type checking: `uv run make type-check` (mypy)
-- Format code: `uv run make format` (ruff format)
-- Tests only: `uv run make test` (pytest)
+Use `ruff` for lint/format, `mypy` for source type checks, and pytest for all tests. Tests must not
+require live provider keys or Codex authentication.
 
-**Focused Testing:**
-- Run specific test: `uv run pytest tests/path/to/test.py`
-- Run by pattern: `uv run pytest -k "test_pattern"`
-- Update snapshots: Update files in `tests/tui/snapshots/` when UI changes
+## Product commands
 
-## Architecture Overview
+```bash
+uv run artist-matrix login
+uv run artist-matrix doctor
+uv run artist-matrix
+uv run artist-matrix run --agent soul_forge --scope demo "Create an artist concept"
+uv run artist-matrix-legacy
+```
 
-Artist Matrix is a terminal-forward agent framework for AI music persona creation and distribution. The system is organized around four main agents:
+The native host injects required MCP settings directly. `.codex/config.toml` mirrors that setup for
+other Codex surfaces after project trust.
 
-**Core Agents:**
-- **Soul Forge** (`src/artist_matrix/soul_forge/`): Persona creation with DeepSeek LLM integration, manifest persistence
-- **Creation Engine** (`src/artist_matrix/creation_engine/`): Track ideation, Suno audio generation, workflow orchestration
-- **Echo Chamber** (`src/artist_matrix/echo_chamber/`): Social amplification planning and analytics
-- **World Stage** (`src/artist_matrix/world_stage/`): Distribution pipeline and release management
+## Architecture
 
-**Shared Infrastructure:**
-- **State Management** (`src/artist_matrix/state/`): Pydantic schemas, settings, job orchestration
-- **TUI Interface** (`src/artist_matrix/tui/`): Dual-mode terminal interface (classic + Rich) with session logging
-- **Interfaces** (`src/artist_matrix/interfaces/`): Protocol definitions for external integrations
+Artist Matrix is a Codex-native virtual-artist system with five roles:
 
-## Key Data Flow
+- Director coordinates the lifecycle.
+- Soul Forge develops validated artist identities.
+- Creation Engine co-creates track briefs and render proposals.
+- Echo Chamber plans reviewable audience campaigns.
+- World Stage validates release proposals.
 
-1. **Persona Creation**: Soul Forge generates artist manifests (`data/artists/<slug>.json`) using DeepSeek LLM
-2. **Track Production**: Creation Engine uses persona context for ideation chat, builds Suno payloads, manages audio rendering
-3. **Session State**: TUI maintains `track_brief` (CreationBrief) and `campaign_plan` (SocialCampaign) for downstream handoffs
-4. **Logging**: All agents support structured logging (persona, Suno, TUI sessions) to `logs/` directories
+The central boundary is `src/artist_matrix/agent_runtime/`:
 
-## Environment Configuration
+- `harness.py` defines the provider-neutral runtime protocol.
+- `codex.py` is the only module coupled to the public `openai_codex` SDK.
+- `service.py` binds roles/scopes to durable threads and injects product boundaries.
+- `threads.py` persists only Codex thread IDs; thread history is not canonical product state.
+- `definitions.py` and `src/artist_matrix/prompts/agents/` define specialist roles and tools.
+- `mcp_server.py` exposes canonical reads and typed proposal creation.
+- `actions.py` implements application-owned approval, rejection, retry, and execution.
 
-**Required Environment Variables:**
-- `ARTIST_MATRIX_PERSONA_PROVIDER/MODEL/API_KEY` - DeepSeek LLM integration
-- `ARTIST_MATRIX_CREATION_AUDIO_PROVIDER/MODEL/API_KEY/BASE_URL` - Suno audio generation
-- `ARTIST_MATRIX_TUI_MODE` - Interface mode (`classic` or `rich`, defaults to `classic`)
-- `ARTIST_MATRIX_TUI_LOG_DIR` - Session logging (defaults to `logs/tui`)
+The MCP surface must stay read/propose-only. Never expose approval, rejection, execution, provider
+credentials, shell, arbitrary paths, or filesystem writes. The app-owned Codex home contains only
+the Artist Matrix MCP server; shell, web, apps, hooks, plugins, and subagents are disabled. Codex
+also runs with deny-all approvals and a read-only sandbox. Consequential work always follows:
 
-**Optional Logging:**
-- `ARTIST_MATRIX_PERSONA_LOG_DIR` - DeepSeek request/response artifacts
-- `ARTIST_MATRIX_CREATION_AUDIO_LOG_DIR` - Suno API interaction logs
+`prepare -> review -> approve -> execute`
 
-## Important File Locations
+The host application owns the last three transitions. A pending proposal or agent message is never
+proof that a provider operation occurred.
 
-**Prompt Templates:**
-- `prompts/persona/` - DeepSeek persona generation prompts
-- `prompts/creation/ideation_system.md` - Creation Engine chat system prompt
+## Domain services and persistence
 
-**Generated Data:**
-- `data/artists/` - Artist manifests and per-artist subdirectories
-- `data/artists/<slug>/drafts/` - Creation workbench draft persistence
-- `data/artists/<slug>/tracks/` - Generated audio files and metadata
+Existing packages remain canonical domain adapters:
 
-**Configuration:**
-- `pyproject.toml` - Dependencies, tool config (ruff line-length: 100, Python 3.11+)
-- `AGENTS.md` - Detailed development guidelines and architecture
+- `soul_forge/` owns `ArtistProfile` and artist manifest persistence.
+- `creation_engine/` owns `TrackIdeationDraft`, production services, and track manifests.
+- `echo_chamber/` owns campaign planning and social client protocols.
+- `world_stage/` owns release validation, distribution protocols, and receipts.
+- `state/` owns settings and shared orchestration schemas.
 
-## TUI Workflow Patterns
+Generated product records live under `data/`. Native proposals default to `data/actions/`; safe
+unconfigured execution envelopes use `data/outbox/` and remain explicitly `queued`; the isolated
+Codex home and thread bindings default under `.cache/codex-home/`. All paths must be derived from
+`ArtistMatrixSettings`, never accepted from model tool arguments.
 
-**Interface Modes:**
-- **Classic TUI** (`ARTIST_MATRIX_TUI_MODE=classic`): Original terminal interface 
-- **Rich TUI** (`ARTIST_MATRIX_TUI_MODE=rich`): Enhanced interface with Alien: Earth theming, animations, improved visuals (feature branch)
+## Legacy compatibility
 
-**Creation Workbench Chat Commands:**
-- `/adopt` - Accept AI's structured JSON suggestions into draft
-- `/edit <field>: <value>` - Manual field updates
-- `/show` - Display current draft status
-- `/finalize` - Preview Suno payload before rendering
+`src/artist_matrix/tui/` is retained for migration and existing regression coverage. Launch it with
+`artist-matrix-legacy` or `python -m artist_matrix.tui`. New orchestration belongs in
+`NativeAgentRuntime`; do not add another provider-specific chat loop to the TUI.
 
-**Navigation Flow:**
-- Main menu → Generate/Select Avatar → Creation Workbench/Echo Chamber
-- Back/edit navigation supported in multi-step wizards
-- Session state preserved for downstream agent handoffs
+Legacy environment variables for DeepSeek, avatar generation, Suno, Rich/classic mode, and logging
+remain supported by domain adapters. Native agents receive none of those credentials through MCP.
 
-## Testing Strategy
+## Change checklist
 
-- **Unit Tests**: Mirror package structure in `tests/`
-- **Integration Tests**: End-to-end workflows in `tests/e2e/`
-- **TUI Tests**: Snapshot-based regression testing with iterator-driven input simulation
-- **Mocking**: External API calls (DeepSeek, Suno) use dependency injection for test isolation
+When adding or changing a native capability:
 
-## Code Style Guidelines
+1. Update the canonical domain schema.
+2. Add a typed action payload and application adapter for side effects.
+3. Add only read/propose MCP tools and validate all slugs/inputs.
+4. Update the role definition and versioned prompt together.
+5. Add fake-harness, event, MCP allowlist, action transition, and domain tests.
+6. Update `docs/workflows.md` and `docs/architecture_codex_native.md`.
 
-- Follow ruff formatting (line length 100, double quotes)
-- Use Pydantic models for all data schemas
-- Type hints required (mypy strict mode)
-- Imports organized by ruff standards
-- Keep agent modules focused on single responsibilities
-- writing test using pytest, not using bash script
-- you can utilize @Makefile for each task testing
+Keep `openai-codex` pinned exactly so the Python SDK and bundled CLI runtime cannot drift. Use only
+public imports from the package root.

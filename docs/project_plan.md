@@ -374,4 +374,37 @@ All PRs must pass:
 - Clear contribution guidelines for future developers
 - No merge until CI is green and review is complete
 
+## Milestone 26: Codex-Native Agent Runtime
+
+- [x] Pin the stable Python Codex SDK and its matching app-server runtime.
+- [x] Introduce a project-owned `AgentHarness` protocol and public-SDK `CodexHarness` adapter.
+- [x] Normalize streamed thread/turn/message/tool/usage/failure events behind Artist Matrix models.
+- [x] Persist one resumable Codex thread ID per specialist role and product scope.
+- [x] Isolate the embedded runtime in an application-owned Codex home/workspace, disable unrelated
+  built-in/user tools, and enforce exact per-role MCP allowlists.
+- [x] Define Director, Soul Forge, Creation Engine, Echo Chamber, and World Stage as versioned native
+  agent definitions and prompts.
+- [x] Add a required project-local FastMCP server with canonical read tools and typed proposal tools.
+- [x] Implement a cross-process-safe action ledger, explicit queued state, provider idempotency
+  context, stale-run recovery, and application-only approval/execution state machine.
+- [x] Reject model-supplied paths and keep provider credentials and consequential operations outside
+  the MCP surface.
+- [x] Make the native CLI the default while preserving the previous deterministic TUI as a legacy
+  compatibility path.
+- [x] Add fake-harness, event adapter, thread persistence, MCP allowlist, validation, retry, and
+  idempotency tests that require no live credentials.
+- [x] Package native prompts in the wheel and wire approved local renders through the existing
+  Creation Engine service.
+- [x] Document the runtime ownership boundary, setup, migration path, and provider-adapter extension
+  contract.
+
+### Follow-on work
+
+- [ ] Add idempotent remote-provider `ActionHandler` implementations for track renders, campaign
+  scheduling, and distribution receipts; retain the explicit queued outbox fallback.
+- [ ] Replace the legacy TUI surface with a Rich UI adapter backed exclusively by
+  `NativeAgentRuntime`, without duplicating the agent loop.
+- [ ] Add an opt-in pinned-runtime integration suite using a mock Responses endpoint and temporary
+  Codex home.
+
  

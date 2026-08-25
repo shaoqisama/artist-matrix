@@ -47,6 +47,8 @@ logger = logging.getLogger(__name__)
 def _to_sequence(raw: str) -> tuple[str, ...]:
     items = [segment.strip() for segment in raw.split(",") if segment.strip()]
     return tuple(items)
+
+
 @dataclass
 class PersonaWizardDraft:
     name: str = ""
@@ -59,6 +61,7 @@ class PersonaWizardDraft:
     narrative_tone: str = ""
     safety_notes: str = ""
     refinement_instructions: tuple[str, ...] = ()
+
 
 @dataclass
 class PersonaRecord:
@@ -220,9 +223,7 @@ class TuiApp:
         except Exception as exc:  # noqa: BLE001
             self.output(f"!! Forge failure: {exc}")
             if self.session.last_manifest_path:
-                self.output(
-                    f"Last successful manifest stored at {self.session.last_manifest_path}"
-                )
+                self.output(f"Last successful manifest stored at {self.session.last_manifest_path}")
             return
 
         profile = result.get("profile")
@@ -235,9 +236,7 @@ class TuiApp:
             seed_tags = tuple(
                 tag.strip()
                 for tag in (
-                    tuple(draft.descriptors)
-                    or tuple(draft.influences)
-                    or tuple(profile.influences)
+                    tuple(draft.descriptors) or tuple(draft.influences) or tuple(profile.influences)
                 )
                 if isinstance(tag, str) and tag.strip()
             )
@@ -286,9 +285,7 @@ class TuiApp:
                 ]
             )
         if draft.visual_palette:
-            summary.append(
-                f" → Visual palette: {', '.join(draft.visual_palette)}"
-            )
+            summary.append(f" → Visual palette: {', '.join(draft.visual_palette)}")
         if draft.narrative_tone:
             summary.append(f" → Narrative tone: {draft.narrative_tone}")
         if draft.safety_notes:
@@ -301,9 +298,7 @@ class TuiApp:
         self.output("\n>> Accessing artist archives...")
         records = self._load_persona_records()
         if not records:
-            self.output(
-            " No personas available. Use 'Generate Avatar' to forge a new profile."
-            )
+            self.output(" No personas available. Use 'Generate Avatar' to forge a new profile.")
             return
 
         while True:
@@ -399,12 +394,18 @@ class TuiApp:
             genre=str(manifest.get("genre", profile.lyric_style)),
             mood=str(manifest.get("mood", "")),
             influences=tuple(self._as_str_list(manifest.get("influences", profile.influences))),
-            descriptors=tuple(self._as_str_list(manifest.get("persona_tags", profile.persona_tags))),
+            descriptors=tuple(
+                self._as_str_list(manifest.get("persona_tags", profile.persona_tags))
+            ),
             brief=self._as_str(manifest.get("brief", "")),
             visual_palette=tuple(self._as_str_list(manifest.get("visual_palette", []))),
-            narrative_tone=self._as_str(manifest.get("narrative_tone", profile.lyric_style), profile.lyric_style),
+            narrative_tone=self._as_str(
+                manifest.get("narrative_tone", profile.lyric_style), profile.lyric_style
+            ),
             safety_notes=self._as_str(manifest.get("safety_notes", profile.safety_notes or "")),
-            refinement_instructions=tuple(self._as_str_list(manifest.get("refinement_instructions", []))),
+            refinement_instructions=tuple(
+                self._as_str_list(manifest.get("refinement_instructions", []))
+            ),
         )
         self._update_suggestions(profile, self.session.draft)
         final_draft = self.ideation_store.load_final(profile.slug)
@@ -474,9 +475,11 @@ class TuiApp:
 
     def _post_persona_prompt(self) -> None:
         while True:
-            selection = self._input(
-                "Next action [c]reation workbench / [e]cho chamber / [m]ain menu: "
-            ).strip().lower()
+            selection = (
+                self._input("Next action [c]reation workbench / [e]cho chamber / [m]ain menu: ")
+                .strip()
+                .lower()
+            )
             if selection in {"c", "creation", "3"}:
                 self.handle_creation_workbench()
                 return
@@ -491,9 +494,7 @@ class TuiApp:
         draft = self.session.track_draft
         if draft is None or draft.persona_slug != profile.slug:
             default_tags = tuple(
-                tag.strip()
-                for tag in profile.influences
-                if isinstance(tag, str) and tag.strip()
+                tag.strip() for tag in profile.influences if isinstance(tag, str) and tag.strip()
             )
             default_notes: tuple[str, ...] = ()
             if profile.narrative_tone and profile.narrative_tone.strip():
@@ -532,7 +533,6 @@ class TuiApp:
         except Exception as exc:  # noqa: BLE001
             logger.debug("Failed to write session log", extra={"error": str(exc)})
 
-
     def handle_creation_workbench(self) -> None:
         profile = self.session.last_profile
         if profile is None:
@@ -549,7 +549,9 @@ class TuiApp:
 
         self.output("\n>> Creation Workbench // Chat Mode")
         self.output(" Type a message to brainstorm with the assistant.")
-        self.output(" Commands -> /help, /show, /adopt, /edit <field>: <value>, /undo, /finalize, /back")
+        self.output(
+            " Commands -> /help, /show, /adopt, /edit <field>: <value>, /undo, /finalize, /back"
+        )
         self.output(" Only /adopt or /edit updates the draft.")
         if self.ideation_llm is None:
             self.output(
@@ -943,7 +945,11 @@ class TuiApp:
                         applied.append("duration_sec")
                     continue
                 try:
-                    numeric = raw_value if isinstance(raw_value, (int, float)) else float(str(raw_value).strip())
+                    numeric = (
+                        raw_value
+                        if isinstance(raw_value, (int, float))
+                        else float(str(raw_value).strip())
+                    )
                 except (TypeError, ValueError):
                     errors.append("duration_sec must be a number of seconds.")
                     continue
@@ -1012,8 +1018,10 @@ class TuiApp:
         existing = self.session.track_brief
         tempo = existing.track.tempo_bpm if existing else None
         key = existing.track.key if existing else None
-        references = tuple(draft.tags) if draft.tags else (
-            tuple(existing.track.references) if existing else ()
+        references = (
+            tuple(draft.tags)
+            if draft.tags
+            else (tuple(existing.track.references) if existing else ())
         )
         note_values = [note for note in draft.notes if note.strip()]
         narrative = "\n".join(note_values) if note_values else None
@@ -1081,9 +1089,7 @@ class TuiApp:
         except Exception as exc:  # noqa: BLE001
             self.output(f"!! Creation Engine failure: {exc}")
             if self.session.last_track_manifest:
-                self.output(
-                    f" Last successful track manifest: {self.session.last_track_manifest}"
-                )
+                self.output(f" Last successful track manifest: {self.session.last_track_manifest}")
             return
 
         manifest_path: Path | None = None
@@ -1119,9 +1125,7 @@ class TuiApp:
         if track_artifact is not None:
             summary.append(f" → Track asset : {track_artifact.audio_path}")
             if track_artifact.duration_seconds:
-                summary.append(
-                    f"   duration   : {track_artifact.duration_seconds:.0f}s"
-                )
+                summary.append(f"   duration   : {track_artifact.duration_seconds:.0f}s")
             if track_artifact.alternates:
                 summary.append("   alternates :")
                 for path in track_artifact.alternates[:3]:
@@ -1334,7 +1338,11 @@ class TuiApp:
                             self.output("  Please provide a value.")
                             continue
                         if kind == "sequence":
-                            setattr(draft, key, current_value if isinstance(current_value, tuple) else tuple())
+                            setattr(
+                                draft,
+                                key,
+                                current_value if isinstance(current_value, tuple) else tuple(),
+                            )
                         else:
                             setattr(draft, key, current_value if current_value else "")
                         index += 1
@@ -1391,9 +1399,11 @@ class TuiApp:
             instructions.append(instruction)
             preview = self._generate_preview(draft, instructions)
             self.output("\n".join(self._summary_lines(preview)))
-            decision = self._input(
-                " Accept refinement? [y]es / [n]o (add another) / [c]ancel: "
-            ).strip().lower()
+            decision = (
+                self._input(" Accept refinement? [y]es / [n]o (add another) / [c]ancel: ")
+                .strip()
+                .lower()
+            )
             if decision in {"y", "yes"}:
                 preview.refinement_instructions = tuple(instructions)
                 return preview

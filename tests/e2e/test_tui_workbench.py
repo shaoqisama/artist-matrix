@@ -40,7 +40,9 @@ def test_creation_workbench_end_to_end(tmp_path: Path) -> None:
             "seed": 108,
         },
     }
-    (artists_dir / "neon-wasteland.json").write_text(json.dumps(persona, indent=2), encoding="utf-8")
+    (artists_dir / "neon-wasteland.json").write_text(
+        json.dumps(persona, indent=2), encoding="utf-8"
+    )
 
     env = {
         "ARTIST_MATRIX_DATA_ROOT": str(data_root),

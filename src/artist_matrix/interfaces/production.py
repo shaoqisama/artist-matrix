@@ -43,8 +43,7 @@ class ArtworkArtifact:
 class LyricGenerator(Protocol):
     """Generates lyric drafts for a given profile and track brief."""
 
-    def generate_lyrics(self, profile: ArtistProfile, spec: TrackJobSpec) -> LyricDraft:
-        ...
+    def generate_lyrics(self, profile: ArtistProfile, spec: TrackJobSpec) -> LyricDraft: ...
 
 
 class AudioGenerator(Protocol):
@@ -55,8 +54,7 @@ class AudioGenerator(Protocol):
         profile: ArtistProfile,
         spec: TrackJobSpec,
         lyrics: LyricDraft,
-    ) -> TrackArtifact:
-        ...
+    ) -> TrackArtifact: ...
 
 
 class ArtworkGenerator(Protocol):
@@ -67,8 +65,7 @@ class ArtworkGenerator(Protocol):
         profile: ArtistProfile,
         spec: ArtworkJobSpec,
         track: TrackArtifact,
-    ) -> ArtworkArtifact:
-        ...
+    ) -> ArtworkArtifact: ...
 
 
 __all__ = [

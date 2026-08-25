@@ -1,5 +1,11 @@
 # Echo Chamber Agent Guide
 
+## Native entry point
+
+Run `artist-matrix chat --agent echo_chamber --scope <artist-slug>`. The native agent may create a
+pending `propose_social_campaign` action but cannot schedule or publish posts. Host approval and a
+configured application adapter are required for external execution.
+
 ## Responsibilities
 - Plan campaign beats and publish social posts across configured platforms.
 - Capture analytics for successful and failed posts to inform iteration.

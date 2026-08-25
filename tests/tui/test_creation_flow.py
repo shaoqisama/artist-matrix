@@ -30,7 +30,7 @@ class RecordingCreationEngine:
         self.audio_path.write_bytes(b"audio")
         self.log_dir.mkdir(parents=True, exist_ok=True)
         log_path = self.log_dir / "test-log.json"
-        log_path.write_text("{\n  \"status\": \"SUCCESS\"\n}", encoding="utf-8")
+        log_path.write_text('{\n  "status": "SUCCESS"\n}', encoding="utf-8")
         return {
             "lyrics": LyricDraft(title=brief.track.title, body="line one\nline two"),
             "track": TrackArtifact(

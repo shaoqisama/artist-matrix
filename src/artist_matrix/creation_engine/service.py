@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Mapping, MutableMapping
 
@@ -21,6 +22,12 @@ from artist_matrix.state.jobs import ArtworkJobSpec, TrackJobSpec
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _TRACK_DATA_ROOT = _PROJECT_ROOT / "data" / "artists"
+_SLUG_SEPARATOR = re.compile(r"[^a-z0-9]+")
+
+
+def _safe_slug(value: str, *, fallback: str) -> str:
+    slug = _SLUG_SEPARATOR.sub("-", value.lower().strip()).strip("-")
+    return slug or fallback
 
 
 @dataclass(frozen=True)
@@ -50,7 +57,7 @@ class TrackManifestRepository:
     ) -> Path:
         artist_root = self.base_path / profile.slug / "tracks"
         artist_root.mkdir(parents=True, exist_ok=True)
-        track_slug = track.title.lower().replace(" ", "-")
+        track_slug = _safe_slug(track.title, fallback="track")
         manifest_path = artist_root / f"{track_slug}.json"
         track_section: MutableMapping[str, object] = {
             "audio_path": str(track.audio_path),
@@ -112,7 +119,7 @@ class CreationEngineService:
         self.audio_generator = audio_generator
         self.artwork_generator = artwork_generator
         self.repository = repository or TrackManifestRepository()
-        self._clock = clock or datetime.utcnow
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
 
     def produce_track(
         self,

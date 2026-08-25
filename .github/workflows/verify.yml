@@ -2,7 +2,7 @@ name: verify
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feature/**', 'refactor/**']
   pull_request:
 
 jobs:
@@ -14,6 +14,6 @@ jobs:
         with:
           python-version: "3.11"
       - name: Sync dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --frozen --python 3.11
       - name: Run verification pipeline
         run: uv run make verify

@@ -1,5 +1,11 @@
 # World Stage Agent Guide
 
+## Native entry point
+
+Run `artist-matrix chat --agent world_stage --scope <artist-slug>`. The native agent validates
+canonical artist and track records and may create a pending `propose_release` action. Distribution
+is accessible only to the application-owned approval/execution boundary.
+
 ## Responsibilities
 - Distribute releases to streaming platforms and storefronts.
 - Persist audited release manifests under `data/releases/<slug>/` for compliance.

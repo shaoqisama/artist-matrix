@@ -158,7 +158,9 @@ def test_generate_avatar_flow_edit_back(tmp_path: Path, stub_service: StubSoulFo
     assert captured[-1].startswith("Session log saved to")
 
 
-def test_generate_avatar_flow_refine_with_ai(tmp_path: Path, stub_service: StubSoulForgeService) -> None:
+def test_generate_avatar_flow_refine_with_ai(
+    tmp_path: Path, stub_service: StubSoulForgeService
+) -> None:
     inputs: Iterator[str] = iter(
         [
             "1",

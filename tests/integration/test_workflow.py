@@ -3,7 +3,13 @@ from __future__ import annotations
 from datetime import date, datetime
 from pathlib import Path
 
-from artist_matrix.creation_engine import CreationBrief, CreationEngineService, TrackManifestRepository
+import pytest
+
+from artist_matrix.creation_engine import (
+    CreationBrief,
+    CreationEngineService,
+    TrackManifestRepository,
+)
 from artist_matrix.echo_chamber import EchoChamberService, SocialCampaign
 from artist_matrix.interfaces.distribution import DistributionReceipt, ReleaseSpec
 from artist_matrix.interfaces.production import ArtworkArtifact, LyricDraft, TrackArtifact
@@ -16,7 +22,14 @@ from artist_matrix.soul_forge.connectors import (
 from artist_matrix.state import JobContext
 from artist_matrix.state.graph import ArtistMatrixGraph
 from artist_matrix.state.jobs import ArtworkJobSpec, TrackJobSpec
-from artist_matrix.world_stage.release import ReleaseManifestRepository, ReleaseRequest, WorldStageService
+from artist_matrix.world_stage.release import (
+    ReleaseManifestRepository,
+    ReleaseRequest,
+    WorldStageService,
+)
+
+
+pytestmark = pytest.mark.integration
 
 
 class StubLyricGenerator:
@@ -39,7 +52,9 @@ class StubArtworkGenerator:
     def __init__(self, tmp_path: Path) -> None:
         self.tmp_path = tmp_path
 
-    def render_artwork(self, profile, spec: ArtworkJobSpec, track: TrackArtifact) -> ArtworkArtifact:
+    def render_artwork(
+        self, profile, spec: ArtworkJobSpec, track: TrackArtifact
+    ) -> ArtworkArtifact:
         path = self.tmp_path / f"{track.title.lower().replace(' ', '_')}.png"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b"art")
@@ -134,7 +149,9 @@ def test_full_workflow(tmp_path: Path) -> None:
             track=TrackJobSpec(title="Signal Burn", mood="fierce"),
             artwork=ArtworkJobSpec(title="Signal Burn", style="poster"),
         ),
-        campaign=SocialCampaign(title="Signal Burn Launch", platform="twitter", beats=("Teaser", "Drop")),
+        campaign=SocialCampaign(
+            title="Signal Burn Launch", platform="twitter", beats=("Teaser", "Drop")
+        ),
         release_request=ReleaseRequest(
             title="Signal Burn",
             release_date=date(2100, 1, 4),

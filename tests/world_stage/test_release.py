@@ -51,12 +51,16 @@ def track_manifest(tmp_path: Path) -> Path:
     return manifest
 
 
-def test_dispatch_release_generates_manifest(profile: ArtistProfile, track_manifest: Path, tmp_path: Path) -> None:
+def test_dispatch_release_generates_manifest(
+    profile: ArtistProfile, track_manifest: Path, tmp_path: Path
+) -> None:
     client = StubDistributionClient("spotify")
     analytics = RecordingAnalytics()
     repository = ReleaseManifestRepository(base_path=tmp_path / "releases")
     fixed_time = datetime(2100, 1, 1, 0, 0, 0)
-    service = WorldStageService([client], analytics=analytics, repository=repository, clock=lambda: fixed_time)
+    service = WorldStageService(
+        [client], analytics=analytics, repository=repository, clock=lambda: fixed_time
+    )
 
     request = ReleaseRequest(
         title="Signal Burn",
@@ -80,7 +84,9 @@ def test_dispatch_release_generates_manifest(profile: ArtistProfile, track_manif
     assert analytics.records == [("spotify", "spotify-123")]
 
 
-def test_dispatch_release_missing_client(profile: ArtistProfile, track_manifest: Path, tmp_path: Path) -> None:
+def test_dispatch_release_missing_client(
+    profile: ArtistProfile, track_manifest: Path, tmp_path: Path
+) -> None:
     service = WorldStageService([], repository=ReleaseManifestRepository(base_path=tmp_path))
     request = ReleaseRequest(
         title="Signal Burn",

@@ -55,7 +55,7 @@ class TrackIdeationDraft(BaseModel):
                     "ref_url": "https://reference.example/signal-burn",
                 }
             ]
-        }
+        },
     }
 
     def update_timestamp(self) -> None:
@@ -84,7 +84,9 @@ class TrackIdeationStore:
 
     def save_draft(self, draft: TrackIdeationDraft) -> Path:
         path = self.draft_path(draft.persona_slug)
-        _logger.debug("Persisting track draft", extra={"persona": draft.persona_slug, "path": str(path)})
+        _logger.debug(
+            "Persisting track draft", extra={"persona": draft.persona_slug, "path": str(path)}
+        )
         serialisable = json.loads(draft.model_dump_json())
         path.write_text(json.dumps(serialisable, indent=2, sort_keys=True), encoding="utf-8")
         return path

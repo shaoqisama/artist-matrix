@@ -54,7 +54,9 @@ class TrackIdeationLLM:
             self.log_dir.mkdir(parents=True, exist_ok=True)
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             path = self.log_dir / f"ideation_{timestamp}.json"
-            path.write_text(json.dumps({"request": payload, "response": data}, indent=2), encoding="utf-8")
+            path.write_text(
+                json.dumps({"request": payload, "response": data}, indent=2), encoding="utf-8"
+            )
         return content
 
     @classmethod

@@ -1,5 +1,12 @@
 # Soul Forge Agent Guide
 
+## Native entry point
+
+Run `artist-matrix chat --agent soul_forge --scope <artist-slug>`. The Codex-native agent reads
+canonical profiles through MCP and may create only a pending `propose_artist_profile` action. The
+application persists the profile after explicit approval. The direct connector flow below is the
+retained domain/legacy adapter.
+
 ## Responsibilities
 - Draft artist personas by routing briefs through persona generators.
 - Persist validated `ArtistProfile` manifests and avatar metadata under `data/artists/`.
@@ -19,7 +26,7 @@
 - Register persona and avatar providers in `SoulForgeService` wiring; use dependency injection for model clients when introducing bespoke SDKs.
 - Default "stub" providers can be replaced with DeepSeek/Claude or SDXL-style adapters once credentials are configured.
 - The TUI wizard now supports back/edit navigation and persists draft state in `SessionState` to streamline iterative persona creation.
-- Prompt templates live under `prompts/persona/`; DeepSeek connectors load `deepseek_artist_template.md` (fallback template embedded) and can be replaced or extended per deployment.
+- Prompt templates are packaged under `src/artist_matrix/prompts/persona/`; DeepSeek connectors load `deepseek_artist_template.md` (fallback template embedded) and can be replaced or extended per deployment.
 - Logged exchanges are stored as JSON containing both request payload and DeepSeek response for traceability.
 
 ## Testing

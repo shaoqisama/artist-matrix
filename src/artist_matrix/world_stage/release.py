@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -18,6 +19,12 @@ from artist_matrix.soul_forge import ArtistProfile
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _RELEASE_ROOT = _PROJECT_ROOT / "data" / "releases"
+_SLUG_SEPARATOR = re.compile(r"[^a-z0-9]+")
+
+
+def _safe_slug(value: str, *, fallback: str) -> str:
+    slug = _SLUG_SEPARATOR.sub("-", value.lower().strip()).strip("-")
+    return slug or fallback
 
 
 @dataclass(frozen=True)
@@ -58,7 +65,7 @@ class ReleaseManifestRepository:
     ) -> Path:
         artist_root = self.base_path / profile.slug
         artist_root.mkdir(parents=True, exist_ok=True)
-        release_slug = request.title.lower().replace(" ", "-")
+        release_slug = _safe_slug(request.title, fallback="release")
         manifest_path = artist_root / f"{release_slug}.json"
 
         payload = {

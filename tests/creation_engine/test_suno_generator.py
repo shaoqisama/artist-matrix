@@ -49,7 +49,9 @@ def test_suno_audio_generator_downloads_audio(
             assert payload["customMode"] is True
             assert payload["instrumental"] is False
             assert payload["model"] == "suno-test"
-            return Response(200, json={"code": 200, "msg": "success", "data": {"taskId": "job-123"}})
+            return Response(
+                200, json={"code": 200, "msg": "success", "data": {"taskId": "job-123"}}
+            )
 
         if request.method == "GET" and request.url.path == "/api/v1/generate/record-info":
             task_id = request.url.params.get("taskId")

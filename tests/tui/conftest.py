@@ -11,23 +11,23 @@ from artist_matrix.creation_engine.ideation import ChatTurn
 
 class MockTrackIdeationLLM:
     """Mock LLM service that returns deterministic responses for testing."""
-    
+
     def __init__(self):
         self.call_count = 0
         self.last_persona_summary = None
         self.last_prompt = None
         self.last_transcript = None
-        
+
     def chat(self, persona_summary: str, prompt: str, transcript: List[ChatTurn]) -> str:
         """Return deterministic response based on input patterns."""
         self.call_count += 1
         self.last_persona_summary = persona_summary
-        self.last_prompt = prompt  
+        self.last_prompt = prompt
         self.last_transcript = transcript
-        
+
         # Pattern-based responses for testing different scenarios
         prompt_lower = prompt.lower()
-        
+
         if "electronic" in prompt_lower or "synth" in prompt_lower:
             return self._electronic_response()
         elif "dark" in prompt_lower or "atmospheric" in prompt_lower:
@@ -39,9 +39,9 @@ class MockTrackIdeationLLM:
             return "This is not valid JSON response"
         else:
             return self._default_response()
-    
+
     def _electronic_response(self) -> str:
-        return '''I suggest creating an electronic track with these elements:
+        return """I suggest creating an electronic track with these elements:
 
 ```json
 {
@@ -56,10 +56,10 @@ class MockTrackIdeationLLM:
 }
 ```
 
-This track captures the electronic vibe with a retro-futuristic feel.'''
+This track captures the electronic vibe with a retro-futuristic feel."""
 
     def _dark_response(self) -> str:
-        return '''Here's a dark atmospheric composition:
+        return """Here's a dark atmospheric composition:
 
 ```json
 {
@@ -74,10 +74,10 @@ This track captures the electronic vibe with a retro-futuristic feel.'''
 }
 ```
 
-A brooding piece perfect for introspective moments.'''
+A brooding piece perfect for introspective moments."""
 
     def _default_response(self) -> str:
-        return '''Let me suggest a track for you:
+        return """Let me suggest a track for you:
 
 ```json
 {
@@ -92,7 +92,7 @@ A brooding piece perfect for introspective moments.'''
 }
 ```
 
-This captures the essence of creative expression.'''
+This captures the essence of creative expression."""
 
 
 @pytest.fixture

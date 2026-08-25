@@ -78,8 +78,7 @@ class StubPersonaGenerator(PersonaGenerator):
 
 @dataclass
 class PersonaPromptAgent(Protocol):
-    def invoke(self, variables: PersonaPromptVariables) -> PersonaLLMOutput:
-        ...
+    def invoke(self, variables: PersonaPromptVariables) -> PersonaLLMOutput: ...
 
 
 @dataclass
@@ -95,6 +94,7 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
     def _render_prompt(self, variables: PersonaPromptVariables) -> str:
         def join(items: list[str]) -> str:
             return ", ".join(items) if items else "None"
+
         mapping = {
             "name": variables.name,
             "genre": variables.genre,
@@ -160,16 +160,24 @@ class DeepSeekPersonaAgent(PersonaPromptAgent):
                     if isinstance(value, str):
                         payload_dict[key] = [value]
                 if isinstance(payload_dict.get("visual_palette"), list):
-                    payload_dict["visual_palette"] = [str(item) for item in payload_dict["visual_palette"]]
+                    payload_dict["visual_palette"] = [
+                        str(item) for item in payload_dict["visual_palette"]
+                    ]
                 if isinstance(payload_dict.get("persona_tags"), list):
-                    payload_dict["persona_tags"] = [str(item) for item in payload_dict["persona_tags"]]
+                    payload_dict["persona_tags"] = [
+                        str(item) for item in payload_dict["persona_tags"]
+                    ]
                 if isinstance(payload_dict.get("influences"), list):
                     payload_dict["influences"] = [str(item) for item in payload_dict["influences"]]
                 output = PersonaLLMOutput.model_validate(payload_dict)
                 if variables.safety_notes:
                     expected = variables.safety_notes.lower()
                     returned = (output.safety_notes or "").lower()
-                    if "avoid" in expected and "avoid" not in returned and "explicit" not in returned:
+                    if (
+                        "avoid" in expected
+                        and "avoid" not in returned
+                        and "explicit" not in returned
+                    ):
                         raise RuntimeError("DeepSeek output dropped safety instructions")
                 logger.info(
                     "DeepSeek persona success",
@@ -351,9 +359,7 @@ def build_persona_generator(settings: ArtistMatrixSettings) -> PersonaGenerator:
             api_key=api_key,
             prompt_agent=agent,
         )
-    raise NotImplementedError(
-        f"Persona provider '{settings.persona_provider}' is not implemented."
-    )
+    raise NotImplementedError(f"Persona provider '{settings.persona_provider}' is not implemented.")
 
 
 def build_avatar_generator(settings: ArtistMatrixSettings) -> AvatarGenerator:
@@ -369,9 +375,7 @@ def build_avatar_generator(settings: ArtistMatrixSettings) -> AvatarGenerator:
             asset_root=asset_root,
             api_key=settings.avatar_api_key,
         )
-    raise NotImplementedError(
-        f"Avatar provider '{settings.avatar_provider}' is not implemented."
-    )
+    raise NotImplementedError(f"Avatar provider '{settings.avatar_provider}' is not implemented.")
 
 
 __all__ = [

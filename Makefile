@@ -1,12 +1,12 @@
 UV ?= uv
 
-.PHONY: verify verify-all lint format type-check test test-integration test-all
+.PHONY: verify verify-all lint format format-check type-check test test-integration test-external test-all
 
 # Default verify runs unit tests only (skip integration)
-verify: lint type-check test
+verify: lint format-check type-check test
 
 # Full verify runs both unit and integration tests
-verify-all: lint type-check test test-integration
+verify-all: lint format-check type-check test test-integration
 
 lint:
 	$(UV) run ruff check src tests
@@ -14,16 +14,23 @@ lint:
 format:
 	$(UV) run ruff format src tests
 
+format-check:
+	$(UV) run ruff format --check src tests
+
 type-check:
 	$(UV) run mypy src
 
-# Unit tests only (skip @pytest.mark.integration)
+# Unit tests only (skip deterministic integration and credentialed external tests)
 test:
-	$(UV) run pytest -m "not integration"
+	$(UV) run pytest -m "not integration and not external"
 
-# Integration tests (may require network/API keys)
+# Deterministic cross-component integration tests
 test-integration:
 	$(UV) run pytest -m "integration"
+
+# Opt-in tests that require network access or credentials
+test-external:
+	$(UV) run pytest -m "external"
 
 # Convenience target to run both suites locally
 test-all: test test-integration

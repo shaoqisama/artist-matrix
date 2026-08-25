@@ -54,15 +54,13 @@ class AvatarBlueprint:
 class PersonaGenerator(Protocol):
     """Interface for drafting persona data via LLM routing."""
 
-    def draft_persona(self, request: PersonaRequest) -> PersonaDraft:
-        ...
+    def draft_persona(self, request: PersonaRequest) -> PersonaDraft: ...
 
 
 class AvatarGenerator(Protocol):
     """Interface for producing avatar artwork via diffusion models."""
 
-    def generate_avatar(self, profile: "ArtistProfile") -> AvatarBlueprint:
-        ...
+    def generate_avatar(self, profile: "ArtistProfile") -> AvatarBlueprint: ...
 
 
 __all__ = [

@@ -36,15 +36,15 @@ class DistributionClient(Protocol):
 
     platform: str
 
-    def submit_release(self, profile: ArtistProfile, spec: ReleaseSpec) -> DistributionReceipt:
-        ...
+    def submit_release(self, profile: ArtistProfile, spec: ReleaseSpec) -> DistributionReceipt: ...
 
 
 class ReleaseAnalytics(Protocol):
     """Interface for recording release analytics."""
 
-    def record(self, profile: ArtistProfile, spec: ReleaseSpec, receipt: DistributionReceipt) -> None:
-        ...
+    def record(
+        self, profile: ArtistProfile, spec: ReleaseSpec, receipt: DistributionReceipt
+    ) -> None: ...
 
 
 __all__ = [

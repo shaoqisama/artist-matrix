@@ -48,7 +48,7 @@ def test_select_avatar_flow(monkeypatch, manifest_dir: Path) -> None:
 
     session = SessionState()
     app = TuiApp(
-        input_func=lambda prompt='': next(inputs),
+        input_func=lambda prompt="": next(inputs),
         output_func=outputs.append,
         session=session,
     )
@@ -67,7 +67,7 @@ def test_select_avatar_empty(monkeypatch, tmp_path: Path) -> None:
     outputs: list[str] = []
 
     app = TuiApp(
-        input_func=lambda prompt='': next(inputs),
+        input_func=lambda prompt="": next(inputs),
         output_func=outputs.append,
         session=SessionState(),
     )

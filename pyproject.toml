@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "artist-matrix"
-version = "0.1.0"
-description = "Agent orchestration toolkit for AI-generated music personas."
+version = "0.2.0"
+description = "Codex-native agent system for virtual artist creation and release operations."
 authors = [{ name = "Artist Matrix Maintainers" }]
 requires-python = ">=3.11"
 dependencies = [
@@ -13,7 +13,19 @@ dependencies = [
     "pydantic-settings>=2.5",
     "httpx>=0.28",
     "rich>=13.0",
+    "openai-codex==0.147.0",
+    "mcp>=1.29,<2",
 ]
+
+[project.scripts]
+artist-matrix = "artist_matrix.cli:main"
+artist-matrix-mcp = "artist_matrix.agent_runtime.mcp_server:main"
+artist-matrix-legacy = "artist_matrix.tui.__main__:legacy_main"
+
+[tool.setuptools.package-data]
+"artist_matrix.prompts.agents" = ["*.md"]
+"artist_matrix.prompts.creation" = ["*.md"]
+"artist_matrix.prompts.persona" = ["*.md"]
 
 [project.optional-dependencies]
 dev = [
@@ -41,7 +53,8 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-ra"
 markers = [
-    "integration: marks tests as integration tests that require external services"
+    "integration: marks deterministic cross-component integration tests",
+    "external: marks tests that require credentials or external services",
 ]
 filterwarnings = [
     # Suppress external library warnings that we can't control

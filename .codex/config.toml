@@ -1,0 +1,74 @@
+# Project-owned product tools. Codex loads this file only after the project is trusted.
+allow_login_shell = false
+web_search = "disabled"
+default_permissions = "artist_matrix_readonly"
+
+[features]
+apps = false
+auth_elicitation = false
+browser_use = false
+browser_use_external = false
+browser_use_full_cdp_access = false
+code_mode = false
+code_mode_host = false
+computer_use = false
+goals = false
+hooks = false
+image_generation = false
+memories = false
+multi_agent = false
+multi_agent_v2 = false
+plugins = false
+remote_plugin = false
+request_permissions_tool = false
+shell_tool = false
+skill_mcp_dependency_install = false
+skill_search = false
+tool_call_mcp_elicitation = false
+tool_suggest = false
+unified_exec = false
+view_image = false
+workspace_dependencies = false
+
+[permissions.artist_matrix_readonly]
+description = "Read only the empty Artist Matrix workspace"
+
+[permissions.artist_matrix_readonly.filesystem]
+":minimal" = "read"
+
+[permissions.artist_matrix_readonly.filesystem.":workspace_roots"]
+"." = "read"
+
+[permissions.artist_matrix_readonly.network]
+enabled = false
+
+[agents]
+enabled = false
+
+[apps._default]
+enabled = false
+
+[tools]
+web_search = false
+
+[mcp_servers.artist_matrix]
+command = "uv"
+args = ["run", "artist-matrix-mcp"]
+env_vars = ["ARTIST_MATRIX_DATA_ROOT", "ARTIST_MATRIX_ACTION_ROOT"]
+enabled = true
+required = true
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+enabled_tools = [
+  "list_artists",
+  "get_artist",
+  "list_tracks",
+  "get_track",
+  "list_actions",
+  "get_action",
+  "propose_artist_profile",
+  "propose_track_render",
+  "propose_social_campaign",
+  "propose_release",
+]
+default_tools_approval_mode = "auto"

@@ -9,7 +9,11 @@ import pytest
 from artist_matrix.interfaces.production import ArtworkArtifact, LyricDraft, TrackArtifact
 from artist_matrix.soul_forge import ArtistProfile
 from artist_matrix.state.jobs import ArtworkJobSpec, TrackJobSpec
-from artist_matrix.creation_engine import CreationBrief, CreationEngineService, TrackManifestRepository
+from artist_matrix.creation_engine import (
+    CreationBrief,
+    CreationEngineService,
+    TrackManifestRepository,
+)
 
 
 @pytest.fixture()

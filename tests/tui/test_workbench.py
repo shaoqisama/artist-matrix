@@ -21,8 +21,12 @@ class _StubCreationEngine:
         manifest_path.write_text("{}", encoding="utf-8")
         track_path = self.tmp_path / "track.wav"
         track_path.write_text("audio", encoding="utf-8")
-        track = TrackArtifact(title=brief.track.title, audio_path=track_path, duration_seconds=186.0)
-        lyrics = LyricDraft(title=brief.track.title, body="lyrics", references=brief.track.references)
+        track = TrackArtifact(
+            title=brief.track.title, audio_path=track_path, duration_seconds=186.0
+        )
+        lyrics = LyricDraft(
+            title=brief.track.title, body="lyrics", references=brief.track.references
+        )
         return {
             "manifest_path": manifest_path,
             "track": track,
